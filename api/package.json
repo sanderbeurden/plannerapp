@@ -1,0 +1,13 @@
+{
+  "name": "plannerapp-api",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.11.4"
+  }
+}

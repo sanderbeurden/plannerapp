@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --background: 36 33% 98%;
+    --foreground: 24 15% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 15% 14%;
+    --primary: 24 62% 42%;
+    --primary-foreground: 36 33% 98%;
+    --secondary: 30 15% 93%;
+    --secondary-foreground: 24 15% 20%;
+    --muted: 30 12% 93%;
+    --muted-foreground: 24 8% 42%;
+    --accent: 210 25% 92%;
+    --accent-foreground: 210 28% 20%;
+    --border: 30 12% 86%;
+    --input: 30 12% 86%;
+    --ring: 24 62% 42%;
+    --radius: 1.1rem;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}

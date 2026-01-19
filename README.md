@@ -1,21 +1,29 @@
-# bun-react-tailwind-shadcn-template
+# Planner App
 
-To install dependencies:
+React SPA (Vite) + Hono API (Bun).
 
+## Structure
+- `frontend/` — Vite + React SPA
+- `api/` — Hono API (Bun)
+
+## Dev (two terminals)
+Frontend:
 ```bash
+cd frontend
 bun install
-```
-
-To start a development server:
-
-```bash
 bun dev
 ```
 
-To run for production:
-
+API:
 ```bash
-bun start
+cd api
+bun install
+bun dev
 ```
 
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Health check
+- `GET http://localhost:3001/api/health`
+
+## Notes
+- API runs on port 3001 and expects the web app on 5173.
+- Update CORS via `CORS_ORIGIN` env var if needed.
