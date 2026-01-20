@@ -1,200 +1,24 @@
-import { CalendarCheck, Clock, Scissors, Sparkles, UserRound } from "lucide-react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
-
-const stats = [
-  { label: "Average booking time", value: "Under 30 seconds" },
-  { label: "Services", value: "Custom list per salon" },
-  { label: "Client records", value: "Built for solo owners" },
-];
-
-const features = [
-  {
-    icon: CalendarCheck,
-    title: "Visual day planner",
-    description: "See every slot at a glance and keep the day flowing without double-bookings.",
-  },
-  {
-    icon: Scissors,
-    title: "Services + clients together",
-    description: "Assign a service and client per slot so each visit is crystal clear.",
-  },
-  {
-    icon: Clock,
-    title: "UTC stored, local display",
-    description: "All timestamps live in UTC while the browser shows the local time.",
-  },
-];
-
-const schedule = [
-  {
-    time: "09:00",
-    client: "Nia Carter",
-    service: "Skin fade + beard",
-    duration: "45 min",
-    status: "Confirmed",
-  },
-  {
-    time: "10:00",
-    client: "Luis Harper",
-    service: "Classic taper",
-    duration: "30 min",
-    status: "Walk-in hold",
-  },
-  {
-    time: "11:15",
-    client: "Zara Musa",
-    service: "Silk press",
-    duration: "60 min",
-    status: "Confirmed",
-  },
-];
+import { RequireAuth } from "@/components/RequireAuth";
+import { AuthProvider } from "@/lib/auth";
+import { Dashboard } from "@/pages/Dashboard";
+import { Landing } from "@/pages/Landing";
+import { Login } from "@/pages/Login";
 
 export function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card/70">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                Planner
-              </p>
-              <p className="text-lg font-semibold">Salon Daybook</p>
-            </div>
-          </div>
-          <div className="hidden items-center gap-3 md:flex">
-            <Button variant="ghost">Log in</Button>
-            <Button>Start free trial</Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 py-12">
-        <section className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
-          <div className="space-y-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
-              Built for solo stylists
-            </p>
-            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-              A calm planner for service-led days.
-            </h1>
-            <p className="max-w-xl text-base text-muted-foreground md:text-lg">
-              Book appointments in minutes, attach the service, and keep a clear
-              view of every client. No distractions, just a clean daybook.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg">Start planning today</Button>
-              <Button size="lg" variant="outline">
-                Watch the demo
-              </Button>
-            </div>
-            <div className="grid gap-4 border-t border-border pt-6 md:grid-cols-3">
-              {stats.map((stat) => (
-                <div key={stat.label} className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    {stat.label}
-                  </p>
-                  <p className="text-lg font-semibold">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
-                  <CalendarCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Today</p>
-                  <p className="text-lg font-semibold">January 19</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
-                <Clock className="h-3 w-3" />
-                Local time view
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {schedule.map((slot) => (
-                <div
-                  key={`${slot.time}-${slot.client}`}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-lg font-semibold">{slot.time}</div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {slot.duration}
-                      </p>
-                      <p className="text-base font-semibold">{slot.service}</p>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                        <UserRound className="h-4 w-4" />
-                        {slot.client}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
-                    {slot.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-6 md:grid-cols-3">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={feature.title}
-                className="rounded-3xl border border-border bg-card p-6 shadow-soft"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h2 className="mt-4 text-xl font-semibold">{feature.title}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
-              </div>
-            );
-          })}
-        </section>
-
-        <section className="flex flex-col gap-6 rounded-3xl border border-border bg-card p-8 shadow-soft md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">
-              Ready to build your calm schedule?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Start with one chair, one calendar, and a plan you can trust.
-            </p>
-          </div>
-          <Button size="lg">Claim your spot</Button>
-        </section>
-      </main>
-
-      <footer className="border-t border-border bg-card/70">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">Salon Daybook</p>
-            <p>Made for independent salon owners.</p>
-          </div>
-          <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-            <span>Privacy</span>
-            <span>Terms</span>
-            <span>Support</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route element={<RequireAuth />}>
+            <Route path="/app" element={<Dashboard />} />
+          </Route>
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
