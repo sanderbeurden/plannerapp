@@ -9,6 +9,7 @@
 ## Build, Test, and Development Commands
 - Frontend dev: `cd frontend && bun install && bun dev` (Vite on `localhost:5173`).
 - API dev: `cd api && bun install && bun dev` (Hono on `localhost:3001`).
+- API DB setup: `cd api && bun run migrate` then `bun run seed`.
 - Root helpers: `bun run dev:web` and `bun run dev:api`.
 - SPA build: `cd frontend && bun run build`, preview with `bun run preview`.
 - Tests are not configured yet; use `bun test` once added.
