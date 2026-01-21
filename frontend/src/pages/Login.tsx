@@ -5,7 +5,7 @@ import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
-type Status = "idle" | "loading" | "success" | "error";
+type Status = "idle" | "loading" | "error";
 
 export function Login() {
   const [status, setStatus] = useState<Status>("idle");
@@ -32,7 +32,7 @@ export function Login() {
     }
 
     form.reset();
-    setStatus("success");
+    setStatus("idle");
     const from =
       (location.state as { from?: { pathname?: string } })?.from?.pathname ??
       "/app";

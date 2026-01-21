@@ -1,6 +1,6 @@
 import { Hono } from "hono";
+import { getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
-import { sign } from "hono/jwt";
 import bcrypt from "bcryptjs";
 
 import { db } from "./db/client";
@@ -9,13 +9,15 @@ const app = new Hono();
 
 const port = Number(process.env.PORT ?? 3001);
 const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
-const jwtSecret = process.env.JWT_SECRET;
-if (process.env.NODE_ENV === "production" && !jwtSecret) {
-  throw new Error("JWT_SECRET environment variable is required in production");
-}
-const effectiveJwtSecret = jwtSecret ?? "dev-secret-change-in-production";
+const isProd = process.env.NODE_ENV === "production";
+const sessionMaxAgeSeconds = 60 * 60 * 24 * 30;
+const sessionCookieName = "planner_session";
 
 const PASSWORD_MAX_BYTES = 72;
+
+function hashSessionToken(token: string): string {
+  return new Bun.CryptoHasher("sha256").update(token).digest("hex");
+}
 
 app.use(
   "/api/*",
@@ -29,6 +31,24 @@ app.get("/api/health", c => {
   return c.json({ ok: true });
 });
 
+function cleanupExpiredSessions() {
+  db.query("DELETE FROM sessions WHERE expires_at <= strftime('%s','now')").run();
+}
+
+function getUserFromSession(token: string) {
+  const tokenHash = hashSessionToken(token);
+  return db
+    .query(
+      `SELECT users.id, users.name, users.email
+       FROM sessions
+       JOIN users ON sessions.user_id = users.id
+       WHERE sessions.token = ?
+         AND sessions.expires_at > strftime('%s','now')
+       LIMIT 1`
+    )
+    .get(tokenHash) as { id: string; name: string; email: string } | null;
+}
+
 app.post("/api/auth/login", async c => {
   const body = await c.req.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email : "";
@@ -41,6 +61,8 @@ app.post("/api/auth/login", async c => {
   if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
     return c.json({ error: "Password too long." }, 400);
   }
+
+  cleanupExpiredSessions();
 
   const user = db
     .query(
@@ -59,22 +81,62 @@ app.post("/api/auth/login", async c => {
     return c.json({ error: "Invalid credentials." }, 401);
   }
 
-  const token = await sign(
-    {
-      sub: user.id,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
-    },
-    effectiveJwtSecret
-  );
+  const token = crypto.randomUUID();
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = Math.floor(Date.now() / 1000) + sessionMaxAgeSeconds;
+  const sessionId = crypto.randomUUID();
+
+  db.query(
+    "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"
+  ).run(sessionId, user.id, tokenHash, expiresAt);
+
+  setCookie(c, sessionCookieName, token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "Lax",
+    path: "/",
+    maxAge: sessionMaxAgeSeconds,
+  });
 
   return c.json({
-    token,
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
     },
   });
+});
+
+app.get("/api/auth/me", c => {
+  const token = getCookie(c, sessionCookieName);
+  if (!token) {
+    return c.json({ error: "Unauthorized." }, 401);
+  }
+
+  cleanupExpiredSessions();
+  const user = getUserFromSession(token);
+  if (!user) {
+    return c.json({ error: "Unauthorized." }, 401);
+  }
+
+  return c.json({ user });
+});
+
+app.post("/api/auth/logout", c => {
+  const token = getCookie(c, sessionCookieName);
+  if (token) {
+    db.query("DELETE FROM sessions WHERE token = ?").run(hashSessionToken(token));
+  }
+
+  setCookie(c, sessionCookieName, "", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "Lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  return c.json({ ok: true });
 });
 
 Bun.serve({

@@ -15,33 +15,42 @@ type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser | null;
-  token: string | null;
   status: "idle" | "loading";
   signIn: (email: string, password: string) => Promise<{ ok: boolean }>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
-
-const STORAGE_TOKEN = "plannerapp.token";
-const STORAGE_USER = "plannerapp.user";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readStoredUser(): AuthUser | null {
-  const stored = localStorage.getItem(STORAGE_USER);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem(STORAGE_TOKEN)
-  );
-  const [status, setStatus] = useState<"idle" | "loading">("idle");
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading">("loading");
+
+  const refresh = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        setUser(null);
+        return;
+      }
+
+      const data = (await response.json()) as { user?: AuthUser };
+      setUser(data.user ?? null);
+    } catch {
+      setUser(null);
+    } finally {
+      setStatus("idle");
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     setStatus("loading");
@@ -49,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -56,20 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false };
       }
 
-      let data: { token?: string; user?: AuthUser };
+      let data: { user?: AuthUser };
       try {
         data = await response.json();
       } catch {
         return { ok: false };
       }
 
-      if (!data.token || !data.user) {
+      if (!data.user) {
         return { ok: false };
       }
 
-      localStorage.setItem(STORAGE_TOKEN, data.token);
-      setToken(data.token);
-      localStorage.setItem(STORAGE_USER, JSON.stringify(data.user));
       setUser(data.user);
 
       return { ok: true };
@@ -80,22 +87,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const signOut = useCallback(() => {
-    localStorage.removeItem(STORAGE_TOKEN);
-    localStorage.removeItem(STORAGE_USER);
-    setToken(null);
-    setUser(null);
+  const signOut = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo(
     () => ({
       user,
-      token,
       status,
       signIn,
       signOut,
+      refresh,
     }),
-    [user, token, status, signIn, signOut]
+    [user, status, signIn, signOut, refresh]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
