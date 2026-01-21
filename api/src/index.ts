@@ -2,10 +2,12 @@ import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import bcrypt from "bcryptjs";
+import { logger } from 'hono/logger';
 
 import { db } from "./db/client";
 
 const app = new Hono();
+app.use(logger())
 
 const port = Number(process.env.PORT ?? 3001);
 const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
