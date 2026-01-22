@@ -30,6 +30,7 @@
 - [ ] Build services management page
 - [ ] Wire API client (fetch wrapper, error handling)
 - [ ] Convert UTC from API to local time for display
+- [ ] Replace landing page placeholders (pricing, testimonials, demo copy) with real content
 
 ## QA / UX
 - [ ] Verify no overlapping appointments can be saved

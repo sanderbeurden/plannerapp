@@ -23,6 +23,14 @@
     --input: 30 12% 86%;
     --ring: 24 62% 42%;
     --radius: 1.1rem;
+
+    /* Calendar status colors */
+    --status-confirmed: 24 62% 42%;
+    --status-confirmed-bg: 24 62% 96%;
+    --status-hold: 38 92% 50%;
+    --status-hold-bg: 38 92% 95%;
+    --status-cancelled: 30 8% 55%;
+    --status-cancelled-bg: 30 8% 94%;
   }
 
   * {
@@ -40,4 +48,77 @@
   h3 {
     @apply font-display;
   }
+}
+
+@layer utilities {
+  .status-confirmed {
+    --status-color: hsl(var(--status-confirmed));
+    --status-bg: hsl(var(--status-confirmed-bg));
+  }
+  .status-hold {
+    --status-color: hsl(var(--status-hold));
+    --status-bg: hsl(var(--status-hold-bg));
+  }
+  .status-cancelled {
+    --status-color: hsl(var(--status-cancelled));
+    --status-bg: hsl(var(--status-cancelled-bg));
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes appointment-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-fade-left {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-fade-right {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.animate-appointment-appear {
+  animation: appointment-appear 200ms ease-out;
+}
+
+.animate-slide-fade-left {
+  animation: slide-fade-left 200ms ease-out;
+}
+
+.animate-slide-fade-right {
+  animation: slide-fade-right 200ms ease-out;
 }

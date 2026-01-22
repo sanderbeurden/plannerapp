@@ -4,26 +4,27 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const stats = [
-  { label: "Average booking time", value: "Under 30 seconds" },
-  { label: "Services", value: "Custom list per salon" },
-  { label: "Client records", value: "Built for solo owners" },
+  { label: "Setup time", value: "Under 2 minutes" },
+  { label: "Daily clarity", value: "No double-bookings" },
+  { label: "Built for", value: "Solo owners" },
 ];
 
 const features = [
   {
     icon: CalendarCheck,
-    title: "Visual day planner",
-    description: "See every slot at a glance and keep the day flowing without double-bookings.",
+    title: "Plan the day in one view",
+    description:
+      "A calm timeline that keeps appointments visible without distractions.",
   },
   {
     icon: Scissors,
-    title: "Services + clients together",
-    description: "Assign a service and client per slot so each visit is crystal clear.",
+    title: "Services + clients linked",
+    description: "Each slot connects the service and the client automatically.",
   },
   {
     icon: Clock,
-    title: "UTC stored, local display",
-    description: "All timestamps live in UTC while the browser shows the local time.",
+    title: "Accurate time zones",
+    description: "UTC in the database, local time in your browser.",
   },
 ];
 
@@ -84,7 +85,7 @@ export function Landing() {
             <Button asChild variant="ghost">
               <Link to="/login">Log in</Link>
             </Button>
-            <Button onClick={handleStartClick}>Start free trial</Button>
+            <Button onClick={handleStartClick}>Create owner account</Button>
           </div>
         </div>
       </header>
@@ -92,24 +93,27 @@ export function Landing() {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 py-12">
         <section className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
               Built for solo stylists
-            </p>
+            </div>
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-              A calm planner for service-led days.
+              The daily planner for solo barbers &amp; beauticians.
             </h1>
             <p className="max-w-xl text-base text-muted-foreground md:text-lg">
-              Book appointments in minutes, attach the service, and keep a clear
-              view of every client. No distractions, just a clean daybook.
+              Schedule clients, attach services, and keep a calm view of every
+              visit. Built for one chair, one owner, and a smoother day.
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button size="lg" onClick={handleStartClick}>
-                Start planning today
+                Create owner account
               </Button>
               <Button size="lg" variant="outline" onClick={handleWatchDemoClick}>
-                Watch the demo
+                See how it works
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground">
+              No credit card. Setup in under two minutes.
+            </p>
             <div className="grid gap-4 border-t border-border pt-6 md:grid-cols-3">
               {stats.map((stat) => (
                 <div key={stat.label} className="space-y-2">
@@ -119,6 +123,15 @@ export function Landing() {
                   <p className="text-lg font-semibold">{stat.value}</p>
                 </div>
               ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              <span>Trusted by solo stylists (beta)</span>
+              <span className="rounded-full border border-border px-3 py-1">
+                Placeholder
+              </span>
+              <span className="rounded-full border border-border px-3 py-1">
+                Placeholder
+              </span>
             </div>
           </div>
 
@@ -132,8 +145,8 @@ export function Landing() {
                   <CalendarCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Today</p>
-                  <p className="text-lg font-semibold">January 19</p>
+                  <p className="text-sm text-muted-foreground">Product preview</p>
+                  <p className="text-lg font-semibold">Daily schedule</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
@@ -190,16 +203,39 @@ export function Landing() {
           })}
         </section>
 
-        <section className="flex flex-col gap-6 rounded-3xl border border-border bg-card p-8 shadow-soft md:flex-row md:items-center md:justify-between">
+        <section className="grid gap-6 rounded-3xl border border-border bg-card p-8 shadow-soft md:grid-cols-3">
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">
-              Ready to build your calm schedule?
-            </h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              Placeholder
+            </p>
+            <h3 className="text-lg font-semibold">Testimonials</h3>
             <p className="text-sm text-muted-foreground">
-              Start with one chair, one calendar, and a plan you can trust.
+              Real owner quotes will live here once we launch the beta.
             </p>
           </div>
-          <Button size="lg" onClick={handleStartClick}>Claim your spot</Button>
+          <div className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
+            “Placeholder testimonial for a solo stylist who saved time.”
+          </div>
+          <div className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
+            “Placeholder testimonial about clear scheduling and fewer no-shows.”
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-6 rounded-3xl border border-border bg-card p-8 shadow-soft md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              Pricing
+            </p>
+            <h2 className="text-2xl font-semibold">
+              Pricing will be announced soon.
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Placeholder section for future pricing tiers and plans.
+            </p>
+          </div>
+          <Button size="lg" onClick={handleStartClick}>
+            Create owner account
+          </Button>
         </section>
       </main>
 

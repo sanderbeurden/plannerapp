@@ -1,0 +1,458 @@
+import { useEffect, useRef, useState } from "react";
+import { X, Search, Plus, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
+import { formatTime, formatDate, addDays } from "./hooks/useDateUtils";
+import { useServices, useClients } from "./hooks/useAppointments";
+
+type AppointmentModalProps = {
+  mode: "create" | "edit";
+  appointment?: AppointmentWithDetails | null;
+  defaultTimeSlot?: { start: Date; end: Date } | null;
+  onClose: () => void;
+  onSave: (data: {
+    clientId: string;
+    serviceId: string;
+    startUtc: string;
+    endUtc: string;
+    status: AppointmentStatus;
+    notes?: string;
+  }) => Promise<boolean>;
+};
+
+export function AppointmentModal({
+  mode,
+  appointment,
+  defaultTimeSlot,
+  onClose,
+  onSave,
+}: AppointmentModalProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { services, loading: loadingServices, createService } = useServices();
+  const [clientSearch, setClientSearch] = useState("");
+  const { clients, loading: loadingClients, createClient } = useClients(clientSearch);
+
+  const [selectedClient, setSelectedClient] = useState<Client | null>(
+    appointment?.client ?? null
+  );
+  const [selectedService, setSelectedService] = useState<Service | null>(
+    appointment?.service ?? null
+  );
+  const [startDate, setStartDate] = useState(() => {
+    if (appointment) return new Date(appointment.startUtc);
+    if (defaultTimeSlot) return defaultTimeSlot.start;
+    return new Date();
+  });
+  const [startTime, setStartTime] = useState(() => {
+    const d = appointment
+      ? new Date(appointment.startUtc)
+      : defaultTimeSlot?.start ?? new Date();
+    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  });
+  const [status, setStatus] = useState<AppointmentStatus>(
+    appointment?.status ?? "confirmed"
+  );
+  const [notes, setNotes] = useState(appointment?.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceDuration, setNewServiceDuration] = useState("30");
+
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!selectedClient) {
+      setError("Please select a client");
+      return;
+    }
+    if (!selectedService) {
+      setError("Please select a service");
+      return;
+    }
+
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const start = new Date(startDate);
+    start.setHours(hours, minutes, 0, 0);
+    const end = new Date(start.getTime() + selectedService.durationMinutes * 60 * 1000);
+
+    setSaving(true);
+    try {
+      const success = await onSave({
+        clientId: selectedClient.id,
+        serviceId: selectedService.id,
+        startUtc: start.toISOString(),
+        endUtc: end.toISOString(),
+        status,
+        notes: notes || undefined,
+      });
+
+      if (success) {
+        onClose();
+      } else {
+        setError("Failed to save appointment. There may be a scheduling conflict.");
+      }
+    } catch (err) {
+      console.error("Failed to save appointment:", err);
+      setError("Failed to save appointment. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) return;
+    try {
+      const client = await createClient({ name: newClientName.trim() });
+      if (client) {
+        setSelectedClient(client);
+        setNewClientName("");
+        setShowClientDropdown(false);
+      } else {
+        setError("Failed to create client. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to create client:", err);
+      setError("Failed to create client. Please try again.");
+    }
+  };
+
+  const handleCreateService = async () => {
+    if (!newServiceName.trim()) return;
+    try {
+      const service = await createService({
+        name: newServiceName.trim(),
+        durationMinutes: parseInt(newServiceDuration) || 30,
+      });
+      if (service) {
+        setSelectedService(service);
+        setNewServiceName("");
+        setShowServiceDropdown(false);
+      } else {
+        setError("Failed to create service. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to create service:", err);
+      setError("Failed to create service. Please try again.");
+    }
+  };
+
+  const endTime = selectedService
+    ? (() => {
+        const [hours, minutes] = startTime.split(":").map(Number);
+        const end = new Date(startDate);
+        end.setHours(hours, minutes + selectedService.durationMinutes, 0, 0);
+        return formatTime(end);
+      })()
+    : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+      <div
+        ref={ref}
+        className="w-full max-w-lg max-h-[90vh] overflow-auto rounded-2xl border border-border bg-card shadow-soft animate-appointment-appear"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+          <h2 className="text-lg font-semibold">
+            {mode === "create" ? "New Appointment" : "Edit Appointment"}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Client Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Client</label>
+            <div className="relative">
+              <div
+                className={cn(
+                  "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
+                  showClientDropdown && "ring-2 ring-ring"
+                )}
+                onClick={() => setShowClientDropdown(true)}
+              >
+                {selectedClient ? (
+                  <span>{selectedClient.name}</span>
+                ) : (
+                  <span className="text-muted-foreground">Select a client...</span>
+                )}
+              </div>
+
+              {showClientDropdown && (
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border bg-card shadow-lg">
+                  <div className="p-2 border-b border-border">
+                    <div className="flex items-center gap-2 px-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Search clients..."
+                        className="flex-1 bg-transparent text-sm outline-none"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-48 overflow-auto p-1">
+                    {loadingClients ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        {clients.map((client) => (
+                          <button
+                            key={client.id}
+                            type="button"
+                            className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() => {
+                              setSelectedClient(client);
+                              setShowClientDropdown(false);
+                              setClientSearch("");
+                            }}
+                          >
+                            {client.name}
+                          </button>
+                        ))}
+                        {clients.length === 0 && !clientSearch && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No clients yet
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="border-t border-border p-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newClientName}
+                        onChange={(e) => setNewClientName(e.target.value)}
+                        placeholder="New client name"
+                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateClient}
+                        disabled={!newClientName.trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
+                    onClick={() => setShowClientDropdown(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Service Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Service</label>
+            <div className="relative">
+              <div
+                className={cn(
+                  "flex items-center justify-between rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
+                  showServiceDropdown && "ring-2 ring-ring"
+                )}
+                onClick={() => setShowServiceDropdown(true)}
+              >
+                {selectedService ? (
+                  <div className="flex items-center justify-between w-full">
+                    <span>{selectedService.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedService.durationMinutes} min
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Select a service...</span>
+                )}
+              </div>
+
+              {showServiceDropdown && (
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border bg-card shadow-lg">
+                  <div className="max-h-48 overflow-auto p-1">
+                    {loadingServices ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        {services.map((service) => (
+                          <button
+                            key={service.id}
+                            type="button"
+                            className="w-full flex items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() => {
+                              setSelectedService(service);
+                              setShowServiceDropdown(false);
+                            }}
+                          >
+                            <span>{service.name}</span>
+                            <span className="text-muted-foreground">
+                              {service.durationMinutes} min
+                            </span>
+                          </button>
+                        ))}
+                        {services.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No services yet
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="border-t border-border p-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newServiceName}
+                        onChange={(e) => setNewServiceName(e.target.value)}
+                        placeholder="Service name"
+                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <input
+                        type="number"
+                        value={newServiceDuration}
+                        onChange={(e) => setNewServiceDuration(e.target.value)}
+                        placeholder="min"
+                        className="w-16 rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateService}
+                        disabled={!newServiceName.trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
+                    onClick={() => setShowServiceDropdown(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Date & Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Date</label>
+              <input
+                type="date"
+                value={`${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, "0")}-${startDate.getDate().toString().padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [year, month, day] = e.target.value.split("-").map(Number);
+                  const newDate = new Date(startDate);
+                  newDate.setFullYear(year, month - 1, day);
+                  setStartDate(newDate);
+                }}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Time</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                step={900}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          {selectedService && (
+            <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">Ends at: </span>
+              <span className="font-medium">{endTime}</span>
+            </div>
+          )}
+
+          {/* Status */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Status</label>
+            <div className="flex gap-2">
+              {(["confirmed", "hold"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={cn(
+                    "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                    status === s
+                      ? s === "confirmed"
+                        ? "border-status-confirmed bg-status-confirmed-bg text-status-confirmed"
+                        : "border-status-hold bg-status-hold-bg text-status-hold"
+                      : "border-border hover:bg-muted"
+                  )}
+                  onClick={() => setStatus(s)}
+                >
+                  {s === "confirmed" ? "Confirmed" : "Hold"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Notes (optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
+              placeholder="Add any notes..."
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {mode === "create" ? "Create Appointment" : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

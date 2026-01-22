@@ -22,6 +22,12 @@ const config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        "status-confirmed": "hsl(var(--status-confirmed))",
+        "status-confirmed-bg": "hsl(var(--status-confirmed-bg))",
+        "status-hold": "hsl(var(--status-hold))",
+        "status-hold-bg": "hsl(var(--status-hold-bg))",
+        "status-cancelled": "hsl(var(--status-cancelled))",
+        "status-cancelled-bg": "hsl(var(--status-cancelled-bg))",
       },
       borderRadius: {
         lg: "var(--radius)",
