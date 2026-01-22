@@ -2,12 +2,12 @@ import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import bcrypt from "bcryptjs";
-import { logger } from 'hono/logger';
+import { logger } from "hono/logger";
 
 import { db } from "./db/client";
 
 const app = new Hono();
-app.use(logger())
+app.use(logger());
 
 const port = Number(process.env.PORT ?? 3001);
 const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
@@ -51,6 +51,19 @@ function getUserFromSession(token: string) {
     .get(tokenHash) as { id: string; name: string; email: string } | null;
 }
 
+function createSession(userId: string) {
+  const token = crypto.randomUUID();
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = Math.floor(Date.now() / 1000) + sessionMaxAgeSeconds;
+  const sessionId = crypto.randomUUID();
+
+  db.query(
+    "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"
+  ).run(sessionId, userId, tokenHash, expiresAt);
+
+  return token;
+}
+
 app.post("/api/auth/login", async c => {
   const body = await c.req.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email : "";
@@ -83,14 +96,7 @@ app.post("/api/auth/login", async c => {
     return c.json({ error: "Invalid credentials." }, 401);
   }
 
-  const token = crypto.randomUUID();
-  const tokenHash = hashSessionToken(token);
-  const expiresAt = Math.floor(Date.now() / 1000) + sessionMaxAgeSeconds;
-  const sessionId = crypto.randomUUID();
-
-  db.query(
-    "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"
-  ).run(sessionId, user.id, tokenHash, expiresAt);
+  const token = createSession(user.id);
 
   setCookie(c, sessionCookieName, token, {
     httpOnly: true,
@@ -105,6 +111,65 @@ app.post("/api/auth/login", async c => {
       id: user.id,
       name: user.name,
       email: user.email,
+    },
+  });
+});
+
+app.post("/api/auth/signup", async c => {
+  const body = await c.req.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+
+  if (!name || !email || !password) {
+    return c.json({ error: "Name, email, and password required." }, 400);
+  }
+
+  if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
+    return c.json({ error: "Password too long." }, 400);
+  }
+
+  const passwordHash = bcrypt.hashSync(password, 10);
+  const userId = crypto.randomUUID();
+
+  const createOwner = db.transaction(() => {
+    const existingCount = db
+      .query("SELECT COUNT(*) as count FROM users")
+      .get() as { count: number };
+
+    if (existingCount.count > 0) {
+      return null;
+    }
+
+    db.query(
+      "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)"
+    ).run(userId, name, email, passwordHash);
+
+    return userId;
+  });
+
+  const createdUserId = createOwner.immediate();
+
+  if (!createdUserId) {
+    return c.json({ error: "Signup disabled for this workspace." }, 409);
+  }
+
+  cleanupExpiredSessions();
+  const token = createSession(createdUserId);
+
+  setCookie(c, sessionCookieName, token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "Lax",
+    path: "/",
+    maxAge: sessionMaxAgeSeconds,
+  });
+
+  return c.json({
+    user: {
+      id: createdUserId,
+      name,
+      email,
     },
   });
 });

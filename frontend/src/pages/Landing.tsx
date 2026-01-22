@@ -55,7 +55,7 @@ export function Landing() {
   const navigate = useNavigate();
 
   const handleStartClick = () => {
-    navigate("/login");
+    navigate("/signup");
   };
 
   const handleWatchDemoClick = () => {

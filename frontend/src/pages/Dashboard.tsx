@@ -1,11 +1,17 @@
 import { CalendarDays, LogOut, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -21,7 +27,7 @@ export function Dashboard() {
             <div className="hidden text-sm text-muted-foreground md:block">
               {user?.name ?? "Owner"}
             </div>
-            <Button variant="ghost" onClick={signOut}>
+            <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>

@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth";
 import { Dashboard } from "@/pages/Dashboard";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
+import { Signup } from "@/pages/Signup";
 
 export function App() {
   return (
@@ -13,6 +14,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route element={<RequireAuth />}>
             <Route path="/app" element={<Dashboard />} />
           </Route>

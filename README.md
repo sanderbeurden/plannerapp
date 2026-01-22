@@ -25,12 +25,10 @@ bun dev
 ```bash
 cd api
 bun run migrate
-bun run seed
 ```
 
 Environment variables:
 - `DB_PATH` (default `data/app.db`)
-- `OWNER_EMAIL`, `OWNER_PASSWORD`, `OWNER_NAME` for seeding the initial owner.
 
 ## Health check
 - `GET http://localhost:3001/api/health`
