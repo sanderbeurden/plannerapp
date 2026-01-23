@@ -48,7 +48,16 @@ export function AppointmentModal({
     const d = appointment
       ? new Date(appointment.startUtc)
       : defaultTimeSlot?.start ?? new Date();
-    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+    // Round minutes to nearest 15-minute interval, clamping to 23:45 max
+    let minutes = Math.round(d.getMinutes() / 15) * 15;
+    let hours = d.getHours() + Math.floor(minutes / 60);
+    minutes = minutes % 60;
+    // Clamp to 23:45 to prevent day rollover
+    if (hours >= 24) {
+      hours = 23;
+      minutes = 45;
+    }
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   });
   const [status, setStatus] = useState<AppointmentStatus>(
     appointment?.status ?? "confirmed"
@@ -57,11 +66,16 @@ export function AppointmentModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  // Single dropdown state - only one can be open at a time
+  const [openDropdown, setOpenDropdown] = useState<"client" | "service" | "time" | null>(null);
+  const [serviceSearch, setServiceSearch] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceDuration, setNewServiceDuration] = useState("30");
+
+  const filteredServices = services.filter((s) =>
+    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+  );
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -122,7 +136,7 @@ export function AppointmentModal({
       if (client) {
         setSelectedClient(client);
         setNewClientName("");
-        setShowClientDropdown(false);
+        setOpenDropdown(null);
       } else {
         setError("Failed to create client. Please try again.");
       }
@@ -142,7 +156,7 @@ export function AppointmentModal({
       if (service) {
         setSelectedService(service);
         setNewServiceName("");
-        setShowServiceDropdown(false);
+        setOpenDropdown(null);
       } else {
         setError("Failed to create service. Please try again.");
       }
@@ -190,9 +204,9 @@ export function AppointmentModal({
               <div
                 className={cn(
                   "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
-                  showClientDropdown && "ring-2 ring-ring"
+                  openDropdown === "client" && "ring-2 ring-ring"
                 )}
-                onClick={() => setShowClientDropdown(true)}
+                onClick={() => setOpenDropdown(openDropdown === "client" ? null : "client")}
               >
                 {selectedClient ? (
                   <span>{selectedClient.name}</span>
@@ -201,7 +215,7 @@ export function AppointmentModal({
                 )}
               </div>
 
-              {showClientDropdown && (
+              {openDropdown === "client" && (
                 <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border bg-card shadow-lg">
                   <div className="p-2 border-b border-border">
                     <div className="flex items-center gap-2 px-2">
@@ -230,7 +244,7 @@ export function AppointmentModal({
                             className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
                             onClick={() => {
                               setSelectedClient(client);
-                              setShowClientDropdown(false);
+                              setOpenDropdown(null);
                               setClientSearch("");
                             }}
                           >
@@ -267,7 +281,7 @@ export function AppointmentModal({
                   <button
                     type="button"
                     className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
-                    onClick={() => setShowClientDropdown(false)}
+                    onClick={() => setOpenDropdown(null)}
                   >
                     Close
                   </button>
@@ -283,9 +297,9 @@ export function AppointmentModal({
               <div
                 className={cn(
                   "flex items-center justify-between rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
-                  showServiceDropdown && "ring-2 ring-ring"
+                  openDropdown === "service" && "ring-2 ring-ring"
                 )}
-                onClick={() => setShowServiceDropdown(true)}
+                onClick={() => setOpenDropdown(openDropdown === "service" ? null : "service")}
               >
                 {selectedService ? (
                   <div className="flex items-center justify-between w-full">
@@ -299,8 +313,21 @@ export function AppointmentModal({
                 )}
               </div>
 
-              {showServiceDropdown && (
+              {openDropdown === "service" && (
                 <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border bg-card shadow-lg">
+                  <div className="p-2 border-b border-border">
+                    <div className="flex items-center gap-2 px-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={serviceSearch}
+                        onChange={(e) => setServiceSearch(e.target.value)}
+                        placeholder="Search services..."
+                        className="flex-1 bg-transparent text-sm outline-none"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
                   <div className="max-h-48 overflow-auto p-1">
                     {loadingServices ? (
                       <div className="flex items-center justify-center py-4">
@@ -308,14 +335,15 @@ export function AppointmentModal({
                       </div>
                     ) : (
                       <>
-                        {services.map((service) => (
+                        {filteredServices.map((service) => (
                           <button
                             key={service.id}
                             type="button"
                             className="w-full flex items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
                             onClick={() => {
                               setSelectedService(service);
-                              setShowServiceDropdown(false);
+                              setOpenDropdown(null);
+                              setServiceSearch("");
                             }}
                           >
                             <span>{service.name}</span>
@@ -324,9 +352,14 @@ export function AppointmentModal({
                             </span>
                           </button>
                         ))}
-                        {services.length === 0 && (
+                        {filteredServices.length === 0 && !serviceSearch && (
                           <div className="px-3 py-2 text-sm text-muted-foreground">
                             No services yet
+                          </div>
+                        )}
+                        {filteredServices.length === 0 && serviceSearch && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No matching services
                           </div>
                         )}
                       </>
@@ -361,7 +394,7 @@ export function AppointmentModal({
                   <button
                     type="button"
                     className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
-                    onClick={() => setShowServiceDropdown(false)}
+                    onClick={() => setOpenDropdown(null)}
                   >
                     Close
                   </button>
@@ -388,12 +421,11 @@ export function AppointmentModal({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Time</label>
-              <input
-                type="time"
+              <TimeSelect
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                step={900}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                onChange={setStartTime}
+                isOpen={openDropdown === "time"}
+                onToggle={() => setOpenDropdown(openDropdown === "time" ? null : "time")}
               />
             </div>
           </div>
@@ -453,6 +485,59 @@ export function AppointmentModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function TimeSelect({
+  value,
+  onChange,
+  isOpen,
+  onToggle,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const timeSlots = Array.from({ length: (23 - 8 + 1) * 4 }, (_, i) => {
+    const hour = 8 + Math.floor(i / 4);
+    const minute = (i % 4) * 15;
+    return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+  });
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "w-full rounded-lg border border-input bg-background px-3 py-2 text-left text-sm outline-none",
+          isOpen && "ring-2 ring-ring"
+        )}
+      >
+        {value}
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-48 overflow-auto rounded-lg border border-border bg-card shadow-lg">
+          {timeSlots.map((slot) => (
+            <button
+              key={slot}
+              type="button"
+              onClick={() => {
+                onChange(slot);
+                onToggle();
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm hover:bg-muted",
+                slot === value && "bg-primary/10 font-medium"
+              )}
+            >
+              {slot}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

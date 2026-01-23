@@ -109,8 +109,7 @@ function WeekAppointmentPill({
   const start = new Date(appointment.startUtc);
   const hours = start.getHours();
   const minutes = start.getMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const timeStr = `${hours % 12 || 12}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 
   const statusClass = {
     confirmed: "status-confirmed",

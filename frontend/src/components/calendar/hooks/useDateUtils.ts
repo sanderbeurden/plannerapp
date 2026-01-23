@@ -42,17 +42,12 @@ const SHORT_MONTH_NAMES = [
 export function formatTime(date: Date): string {
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const hour12 = hours % 12 || 12;
-  const minuteStr = minutes.toString().padStart(2, "0");
-  return `${hour12}:${minuteStr} ${ampm}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
 
 export function formatTimeShort(date: Date): string {
   const hours = date.getHours();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const hour12 = hours % 12 || 12;
-  return `${hour12} ${ampm}`;
+  return `${hours.toString().padStart(2, "0")}:00`;
 }
 
 export function formatDate(date: Date): string {

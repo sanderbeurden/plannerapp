@@ -14,7 +14,7 @@ type DayViewProps = {
 };
 
 const START_HOUR = 8;
-const END_HOUR = 20;
+const END_HOUR = 23;
 const HOUR_HEIGHT = 80;
 
 export function DayView({
@@ -154,7 +154,7 @@ export function DayView({
 
         {/* Appointments layer - positioned over the grid area (after the time labels) */}
         <div
-          className="absolute top-0 bottom-0"
+          className="absolute top-3 bottom-0"
           style={{ left: 64, right: 0 }}
         >
           <NowIndicator

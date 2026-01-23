@@ -35,7 +35,7 @@ export function TimeGrid({
   };
 
   return (
-    <div className="relative flex">
+    <div className="relative flex pt-3">
       {/* Time labels column */}
       <div className="relative w-16 flex-shrink-0 border-r border-border">
         {hours.map((hour) => {
@@ -47,7 +47,7 @@ export function TimeGrid({
               className="relative"
               style={{ height: hourHeight }}
             >
-              <span className="absolute -top-2.5 right-3 text-xs text-muted-foreground">
+              <span className="absolute -top-2 right-3 text-xs text-muted-foreground">
                 {formatTimeShort(date)}
               </span>
             </div>
