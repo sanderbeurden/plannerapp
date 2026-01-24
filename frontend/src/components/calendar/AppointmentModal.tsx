@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Search, Plus, Loader2 } from "lucide-react";
+import { X, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
-import { formatTime, formatDate, addDays } from "./hooks/useDateUtils";
+import { formatTime } from "./hooks/useDateUtils";
 import { useServices, useClients } from "./hooks/useAppointments";
 
 type AppointmentModalProps = {
@@ -29,9 +29,9 @@ export function AppointmentModal({
   onSave,
 }: AppointmentModalProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const { services, loading: loadingServices, createService } = useServices();
+  const { services, loading: loadingServices } = useServices();
   const [clientSearch, setClientSearch] = useState("");
-  const { clients, loading: loadingClients, createClient } = useClients(clientSearch);
+  const { clients, loading: loadingClients } = useClients(clientSearch);
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(
     appointment?.client ?? null
@@ -69,9 +69,6 @@ export function AppointmentModal({
   // Single dropdown state - only one can be open at a time
   const [openDropdown, setOpenDropdown] = useState<"client" | "service" | "time" | null>(null);
   const [serviceSearch, setServiceSearch] = useState("");
-  const [newClientName, setNewClientName] = useState("");
-  const [newServiceName, setNewServiceName] = useState("");
-  const [newServiceDuration, setNewServiceDuration] = useState("30");
 
   const filteredServices = services.filter((s) =>
     s.name.toLowerCase().includes(serviceSearch.toLowerCase())
@@ -129,43 +126,6 @@ export function AppointmentModal({
     }
   };
 
-  const handleCreateClient = async () => {
-    if (!newClientName.trim()) return;
-    try {
-      const client = await createClient({ name: newClientName.trim() });
-      if (client) {
-        setSelectedClient(client);
-        setNewClientName("");
-        setOpenDropdown(null);
-      } else {
-        setError("Failed to create client. Please try again.");
-      }
-    } catch (err) {
-      console.error("Failed to create client:", err);
-      setError("Failed to create client. Please try again.");
-    }
-  };
-
-  const handleCreateService = async () => {
-    if (!newServiceName.trim()) return;
-    try {
-      const service = await createService({
-        name: newServiceName.trim(),
-        durationMinutes: parseInt(newServiceDuration) || 30,
-      });
-      if (service) {
-        setSelectedService(service);
-        setNewServiceName("");
-        setOpenDropdown(null);
-      } else {
-        setError("Failed to create service. Please try again.");
-      }
-    } catch (err) {
-      console.error("Failed to create service:", err);
-      setError("Failed to create service. Please try again.");
-    }
-  };
-
   const endTime = selectedService
     ? (() => {
         const [hours, minutes] = startTime.split(":").map(Number);
@@ -209,7 +169,7 @@ export function AppointmentModal({
                 onClick={() => setOpenDropdown(openDropdown === "client" ? null : "client")}
               >
                 {selectedClient ? (
-                  <span>{selectedClient.name}</span>
+                  <span>{selectedClient.fullName}</span>
                 ) : (
                   <span className="text-muted-foreground">Select a client...</span>
                 )}
@@ -248,43 +208,22 @@ export function AppointmentModal({
                               setClientSearch("");
                             }}
                           >
-                            {client.name}
+                            {client.fullName}
                           </button>
                         ))}
                         {clients.length === 0 && !clientSearch && (
                           <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No clients yet
+                            No clients yet. Add clients in Settings → Clients.
+                          </div>
+                        )}
+                        {clients.length === 0 && clientSearch && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No matching clients
                           </div>
                         )}
                       </>
                     )}
                   </div>
-                  <div className="border-t border-border p-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newClientName}
-                        onChange={(e) => setNewClientName(e.target.value)}
-                        placeholder="New client name"
-                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleCreateClient}
-                        disabled={!newClientName.trim()}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
-                    onClick={() => setOpenDropdown(null)}
-                  >
-                    Close
-                  </button>
                 </div>
               )}
             </div>
@@ -354,7 +293,7 @@ export function AppointmentModal({
                         ))}
                         {filteredServices.length === 0 && !serviceSearch && (
                           <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No services yet
+                            No services yet. Add services in Settings → Services.
                           </div>
                         )}
                         {filteredServices.length === 0 && serviceSearch && (
@@ -365,39 +304,6 @@ export function AppointmentModal({
                       </>
                     )}
                   </div>
-                  <div className="border-t border-border p-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newServiceName}
-                        onChange={(e) => setNewServiceName(e.target.value)}
-                        placeholder="Service name"
-                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <input
-                        type="number"
-                        value={newServiceDuration}
-                        onChange={(e) => setNewServiceDuration(e.target.value)}
-                        placeholder="min"
-                        className="w-16 rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleCreateService}
-                        disabled={!newServiceName.trim()}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="w-full border-t border-border p-2 text-sm text-muted-foreground hover:bg-muted"
-                    onClick={() => setOpenDropdown(null)}
-                  >
-                    Close
-                  </button>
                 </div>
               )}
             </div>

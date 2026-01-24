@@ -12,7 +12,9 @@ export type AppBindings = {
 
 export type Client = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
   email: string | null;
   phone: string | null;
   notes: string | null;
@@ -56,6 +58,8 @@ export type Appointment = {
 type DbClientRow = {
   id: string;
   name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
   notes: string | null;
@@ -82,9 +86,14 @@ type DbAppointmentRow = {
 };
 
 export function mapClient(row: DbClientRow): Client {
+  const first = row.first_name ?? row.name ?? "";
+  const last = row.last_name ?? "";
+  const fullName = `${first} ${last}`.trim();
   return {
     id: row.id,
-    name: row.name,
+    firstName: first,
+    lastName: last,
+    fullName,
     email: row.email,
     phone: row.phone,
     notes: row.notes,

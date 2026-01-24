@@ -132,7 +132,7 @@ export function AppointmentPopover({
           <div className="flex items-center gap-3 text-sm">
             <User className="h-4 w-4 text-muted-foreground" />
             <div>
-              <div className="font-medium">{appointment.client.name}</div>
+              <div className="font-medium">{appointment.client.fullName}</div>
               {appointment.client.phone && (
                 <div className="text-muted-foreground">{appointment.client.phone}</div>
               )}

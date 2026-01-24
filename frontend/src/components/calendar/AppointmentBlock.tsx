@@ -77,7 +77,7 @@ export function AppointmentBlock({
         {showDetails && (
           <>
             <span className="text-sm text-muted-foreground truncate">
-              {appointment.client.name}
+              {appointment.client.fullName}
             </span>
             <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
               <span>{formatTime(start)}</span>

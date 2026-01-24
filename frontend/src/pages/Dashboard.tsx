@@ -1,13 +1,27 @@
-import { LogOut, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { LogOut, Settings, Scissors, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/calendar";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [showSettings, setShowSettings] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -24,13 +38,44 @@ export function Dashboard() {
             </p>
             <p className="text-lg font-semibold text-foreground">Salon Daybook</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-sm text-muted-foreground md:block">
+          <div className="flex items-center gap-2">
+            <div className="hidden text-sm text-muted-foreground md:block mr-2">
               {user?.name ?? "Owner"}
             </div>
-            <Button variant="ghost" onClick={handleSignOut}>
+            <div className="relative" ref={menuRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSettings(!showSettings)}
+                className={cn(showSettings && "bg-muted")}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              {showSettings && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-card shadow-lg z-50">
+                  <div className="p-1">
+                    <Link
+                      to="/app/services"
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      onClick={() => setShowSettings(false)}
+                    >
+                      <Scissors className="h-4 w-4" />
+                      Services
+                    </Link>
+                    <Link
+                      to="/app/clients"
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      onClick={() => setShowSettings(false)}
+                    >
+                      <Users className="h-4 w-4" />
+                      Clients
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>

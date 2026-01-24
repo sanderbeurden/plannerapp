@@ -101,7 +101,7 @@ export function Calendar() {
   const handleDeleteAppointment = useCallback(async () => {
     if (popoverAppointment) {
       const confirmed = window.confirm(
-        `Are you sure you want to delete this appointment for ${popoverAppointment.client.name}?`
+        `Are you sure you want to delete this appointment for ${popoverAppointment.client.fullName}?`
       );
       if (confirmed) {
         await deleteAppointment(popoverAppointment.id);

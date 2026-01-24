@@ -153,22 +153,24 @@ export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchServices() {
-      try {
-        const response = await fetch("/api/services", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = (await response.json()) as { data: Service[] };
-          setServices(data.data);
-        }
-      } finally {
-        setLoading(false);
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/services", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = (await response.json()) as { data: Service[] };
+        setServices(data.data);
       }
+    } finally {
+      setLoading(false);
     }
-    fetchServices();
   }, []);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const createService = useCallback(
     async (input: {
@@ -198,35 +200,84 @@ export function useServices() {
     []
   );
 
-  return { services, loading, createService };
+  const updateService = useCallback(
+    async (
+      id: string,
+      input: { name?: string; durationMinutes?: number; priceCents?: number }
+    ): Promise<Service | null> => {
+      try {
+        const response = await fetch(`/api/services/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(input),
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = (await response.json()) as { data: Service };
+        setServices((prev) =>
+          prev.map((s) => (s.id === id ? data.data : s))
+        );
+        return data.data;
+      } catch {
+        return null;
+      }
+    },
+    []
+  );
+
+  const deleteService = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/services/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return { services, loading, createService, updateService, deleteService, refetch: fetchServices };
 }
 
 export function useClients(searchQuery: string = "") {
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchClients = useCallback(async (query?: string) => {
+    setLoading(true);
+    try {
+      const params = query ? `?q=${encodeURIComponent(query)}` : "";
+      const response = await fetch(`/api/clients${params}`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = (await response.json()) as { data: Client[] };
+        setClients(data.data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchClients() {
-      setLoading(true);
-      try {
-        const params = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
-        const response = await fetch(`/api/clients${params}`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = (await response.json()) as { data: Client[] };
-          setClients(data.data);
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchClients();
-  }, [searchQuery]);
+    fetchClients(searchQuery);
+  }, [searchQuery, fetchClients]);
 
   const createClient = useCallback(
     async (input: {
-      name: string;
+      firstName: string;
+      lastName: string;
       email?: string;
       phone?: string;
       notes?: string;
@@ -253,5 +304,59 @@ export function useClients(searchQuery: string = "") {
     []
   );
 
-  return { clients, loading, createClient };
+  const updateClient = useCallback(
+    async (
+      id: string,
+      input: {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        phone?: string;
+        notes?: string;
+      }
+    ): Promise<Client | null> => {
+      try {
+        const response = await fetch(`/api/clients/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(input),
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = (await response.json()) as { data: Client };
+        setClients((prev) =>
+          prev.map((c) => (c.id === id ? data.data : c))
+        );
+        return data.data;
+      } catch {
+        return null;
+      }
+    },
+    []
+  );
+
+  const deleteClient = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        return { success: false, error: data.error || "Failed to delete client" };
+      }
+
+      setClients((prev) => prev.filter((c) => c.id !== id));
+      return { success: true };
+    } catch {
+      return { success: false, error: "Failed to delete client" };
+    }
+  }, []);
+
+  return { clients, loading, createClient, updateClient, deleteClient, refetch: () => fetchClients(searchQuery) };
 }

@@ -173,15 +173,25 @@ app.get("/api/clients", c => {
 
   if (q) {
     // Escape SQL LIKE wildcards
-    const escaped = q.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+    const escaped = q
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
     const like = `%${escaped}%`;
     rows = db
       .query(
-        "SELECT * FROM clients WHERE name LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\' ORDER BY name ASC"
+        `SELECT * FROM clients
+         WHERE first_name LIKE ? ESCAPE '\\'
+            OR last_name LIKE ? ESCAPE '\\'
+            OR (first_name || ' ' || last_name) LIKE ? ESCAPE '\\'
+            OR email LIKE ? ESCAPE '\\'
+         ORDER BY first_name ASC, last_name ASC`
       )
-      .all(like, like);
+      .all(like, like, like, like);
   } else {
-    rows = db.query("SELECT * FROM clients ORDER BY name ASC").all();
+    rows = db
+      .query("SELECT * FROM clients ORDER BY first_name ASC, last_name ASC")
+      .all();
   }
 
   const clients = (rows as Parameters<typeof mapClient>[0][]).map(mapClient);
@@ -190,21 +200,33 @@ app.get("/api/clients", c => {
 
 app.post("/api/clients", async c => {
   const body = await c.req.json().catch(() => null);
-  const name = getRequiredString(body?.name);
-  if (!name) {
-    return jsonError(c, "Client name is required.");
+  const firstName = getRequiredString(body?.firstName);
+  const lastName = getRequiredString(body?.lastName);
+  if (!firstName || !lastName) {
+    return jsonError(c, "Client firstName and lastName are required.");
   }
 
   const email = getOptionalString(body?.email);
   const phone = getOptionalString(body?.phone);
   const notes = getOptionalString(body?.notes);
 
+  const existing = db
+    .query(
+      "SELECT id FROM clients WHERE first_name = ? AND last_name = ? LIMIT 1"
+    )
+    .get(firstName, lastName);
+  if (existing) {
+    return jsonError(c, "Client with this name already exists.", 409);
+  }
+
   const id = crypto.randomUUID();
   db.query(
-    "INSERT INTO clients (id, name, email, phone, notes) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO clients (id, name, first_name, last_name, email, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).run(
     id,
-    name,
+    `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
     email ?? null,
     phone ?? null,
     notes ?? null
@@ -226,23 +248,45 @@ app.put("/api/clients/:id", async c => {
   }
 
   const body = await c.req.json().catch(() => null);
-  const nameInput = getOptionalString(body?.name);
+  const firstNameInput = getOptionalString(body?.firstName);
+  const lastNameInput = getOptionalString(body?.lastName);
   const emailInput = getOptionalString(body?.email);
   const phoneInput = getOptionalString(body?.phone);
   const notesInput = getOptionalString(body?.notes);
 
-  const name = nameInput === undefined ? existing.name : nameInput;
-  if (!name) {
-    return jsonError(c, "Client name is required.");
+  const firstName =
+    firstNameInput === undefined ? existing.first_name : firstNameInput;
+  const lastName =
+    lastNameInput === undefined ? existing.last_name : lastNameInput;
+
+  if (!firstName || !lastName) {
+    return jsonError(c, "Client firstName and lastName are required.");
   }
 
   const email = emailInput === undefined ? existing.email : emailInput;
   const phone = phoneInput === undefined ? existing.phone : phoneInput;
   const notes = notesInput === undefined ? existing.notes : notesInput;
 
+  const duplicate = db
+    .query(
+      "SELECT id FROM clients WHERE id != ? AND first_name = ? AND last_name = ? LIMIT 1"
+    )
+    .get(id, firstName, lastName);
+  if (duplicate) {
+    return jsonError(c, "Client with this name already exists.", 409);
+  }
+
   db.query(
-    "UPDATE clients SET name = ?, email = ?, phone = ?, notes = ? WHERE id = ?"
-  ).run(name, email, phone, notes, id);
+    "UPDATE clients SET name = ?, first_name = ?, last_name = ?, email = ?, phone = ?, notes = ? WHERE id = ?"
+  ).run(
+    `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
+    email,
+    phone,
+    notes,
+    id
+  );
 
   const row = db
     .query("SELECT * FROM clients WHERE id = ?")
@@ -252,6 +296,15 @@ app.put("/api/clients/:id", async c => {
 
 app.delete("/api/clients/:id", c => {
   const id = c.req.param("id");
+
+  // Check if client has appointments
+  const hasAppointments = db
+    .query("SELECT id FROM appointments WHERE client_id = ? LIMIT 1")
+    .get(id);
+  if (hasAppointments) {
+    return jsonError(c, "Cannot delete client with existing appointments.", 409);
+  }
+
   const result = db.query("DELETE FROM clients WHERE id = ?").run(id);
   if (result.changes === 0) {
     return jsonError(c, "Client not found.", 404);
@@ -368,7 +421,8 @@ app.get("/api/appointments", c => {
         a.notes,
         a.created_at,
         c.id as client_id_join,
-        c.name as client_name,
+        c.first_name as client_first_name,
+        c.last_name as client_last_name,
         c.email as client_email,
         c.phone as client_phone,
         c.notes as client_notes,
@@ -393,7 +447,8 @@ app.get("/api/appointments", c => {
       status: string;
       notes: string | null;
       created_at: string;
-      client_name: string;
+      client_first_name: string;
+      client_last_name: string;
       client_email: string | null;
       client_phone: string | null;
       client_notes: string | null;
@@ -415,7 +470,9 @@ app.get("/api/appointments", c => {
     createdAt: row.created_at,
     client: {
       id: row.client_id,
-      name: row.client_name,
+      firstName: row.client_first_name,
+      lastName: row.client_last_name,
+      fullName: `${row.client_first_name} ${row.client_last_name}`,
       email: row.client_email,
       phone: row.client_phone,
       notes: row.client_notes,

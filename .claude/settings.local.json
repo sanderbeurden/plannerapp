@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(coderabbit:*)"
+      "Bash(coderabbit:*)",
+      "Bash(bunx tsc:*)"
     ]
   }
 }

@@ -130,7 +130,7 @@ function WeekAppointmentPill({
     >
       <div className="font-medium truncate">{appointment.service.name}</div>
       <div className="text-muted-foreground truncate">
-        {timeStr} · {appointment.client.name}
+        {timeStr} · {appointment.client.fullName}
       </div>
     </button>
   );
