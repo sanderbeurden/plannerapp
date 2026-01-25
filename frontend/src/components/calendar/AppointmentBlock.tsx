@@ -40,7 +40,7 @@ export function AppointmentBlock({
   return (
     <div
       className={cn(
-        "absolute left-1 right-2 cursor-pointer overflow-hidden rounded-xl",
+        "absolute left-1 right-2 cursor-pointer overflow-hidden rounded-xl pointer-events-auto",
         "border-l-4 bg-[var(--status-bg)] shadow-sm",
         "transition-all duration-150 hover:shadow-md hover:-translate-y-0.5",
         "animate-appointment-appear",

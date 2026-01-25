@@ -154,7 +154,7 @@ export function DayView({
 
         {/* Appointments layer - positioned over the grid area (after the time labels) */}
         <div
-          className="absolute top-3 bottom-0"
+          className="absolute top-3 bottom-0 pointer-events-none"
           style={{ left: 64, right: 0 }}
         >
           <NowIndicator
