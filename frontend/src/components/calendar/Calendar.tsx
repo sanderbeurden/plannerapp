@@ -163,6 +163,7 @@ export function Calendar() {
           mode={calendarState.modalMode}
           appointment={calendarState.selectedAppointment}
           defaultTimeSlot={calendarState.selectedTimeSlot}
+          existingAppointments={appointments}
           onClose={calendarState.closeModal}
           onSave={handleSaveAppointment}
         />

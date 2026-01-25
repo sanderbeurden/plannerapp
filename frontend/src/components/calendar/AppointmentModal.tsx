@@ -10,6 +10,7 @@ type AppointmentModalProps = {
   mode: "create" | "edit";
   appointment?: AppointmentWithDetails | null;
   defaultTimeSlot?: { start: Date; end: Date } | null;
+  existingAppointments?: AppointmentWithDetails[];
   onClose: () => void;
   onSave: (data: {
     clientId: string;
@@ -25,6 +26,7 @@ export function AppointmentModal({
   mode,
   appointment,
   defaultTimeSlot,
+  existingAppointments = [],
   onClose,
   onSave,
 }: AppointmentModalProps) {
@@ -50,16 +52,11 @@ export function AppointmentModal({
     // Default for new appointments (will be updated when service is selected)
     return 30;
   });
-  const [startDate, setStartDate] = useState(() => {
-    if (appointment) return new Date(appointment.startUtc);
-    if (defaultTimeSlot) return defaultTimeSlot.start;
-    return new Date();
-  });
-  const [startTime, setStartTime] = useState(() => {
+  const [startDateTime, setStartDateTime] = useState(() => {
     const d = appointment
       ? new Date(appointment.startUtc)
       : defaultTimeSlot?.start ?? new Date();
-    // Round minutes to nearest 15-minute interval, clamping to 23:45 max
+    // Round minutes to nearest 15-minute interval
     let minutes = Math.round(d.getMinutes() / 15) * 15;
     let hours = d.getHours() + Math.floor(minutes / 60);
     minutes = minutes % 60;
@@ -68,7 +65,8 @@ export function AppointmentModal({
       hours = 23;
       minutes = 45;
     }
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+    d.setHours(hours, minutes, 0, 0);
+    return d;
   });
   const [status, setStatus] = useState<AppointmentStatus>(
     appointment?.status ?? "confirmed"
@@ -78,7 +76,7 @@ export function AppointmentModal({
   const [error, setError] = useState<string | null>(null);
 
   // Single dropdown state - only one can be open at a time
-  const [openDropdown, setOpenDropdown] = useState<"client" | "service" | "time" | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<"client" | "service" | null>(null);
   const [serviceSearch, setServiceSearch] = useState("");
 
   const filteredServices = services.filter((s) =>
@@ -108,9 +106,7 @@ export function AppointmentModal({
       return;
     }
 
-    const [hours, minutes] = startTime.split(":").map(Number);
-    const start = new Date(startDate);
-    start.setHours(hours, minutes, 0, 0);
+    const start = new Date(startDateTime);
     const end = new Date(start.getTime() + customDuration * 60 * 1000);
 
     setSaving(true);
@@ -137,14 +133,26 @@ export function AppointmentModal({
     }
   };
 
-  const endTime = selectedService
-    ? (() => {
-        const [hours, minutes] = startTime.split(":").map(Number);
-        const end = new Date(startDate);
-        end.setHours(hours, minutes + customDuration, 0, 0);
-        return formatTime(end);
-      })()
-    : null;
+  const endDateTime = new Date(startDateTime.getTime() + customDuration * 60 * 1000);
+  const endTime = selectedService ? formatTime(endDateTime) : null;
+
+  // Check for overlaps with existing appointments
+  const checkOverlap = (time: Date) => {
+    const currentAppointmentId = appointment?.id;
+    return existingAppointments.some((apt) => {
+      // Skip the current appointment when editing
+      if (apt.id === currentAppointmentId) return false;
+      // Skip cancelled appointments
+      if (apt.status === "cancelled") return false;
+      const aptStart = new Date(apt.startUtc);
+      const aptEnd = new Date(apt.endUtc);
+      return time >= aptStart && time < aptEnd;
+    });
+  };
+
+  const startOverlaps = selectedService && checkOverlap(startDateTime);
+  const endOverlaps = selectedService && checkOverlap(endDateTime);
+  const hasOverlap = startOverlaps || endOverlaps;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -246,18 +254,13 @@ export function AppointmentModal({
             <div className="relative">
               <div
                 className={cn(
-                  "flex items-center justify-between rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
+                  "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
                   openDropdown === "service" && "ring-2 ring-ring"
                 )}
                 onClick={() => setOpenDropdown(openDropdown === "service" ? null : "service")}
               >
                 {selectedService ? (
-                  <div className="flex items-center justify-between w-full">
-                    <span>{selectedService.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {selectedService.durationMinutes} min
-                    </span>
-                  </div>
+                  <span>{selectedService.name}</span>
                 ) : (
                   <span className="text-muted-foreground">Select a service...</span>
                 )}
@@ -321,37 +324,38 @@ export function AppointmentModal({
             </div>
           </div>
 
-          {/* Date & Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
+          {/* Date, Time & Duration */}
+          <div className="flex gap-4 items-end">
+            <div className="flex-1 min-w-0 space-y-2">
+              <label className="text-sm font-medium">Date & Time</label>
               <input
-                type="date"
-                value={`${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, "0")}-${startDate.getDate().toString().padStart(2, "0")}`}
+                type="datetime-local"
+                value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}T${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
                 onChange={(e) => {
-                  const [year, month, day] = e.target.value.split("-").map(Number);
-                  const newDate = new Date(startDate);
-                  newDate.setFullYear(year, month - 1, day);
-                  setStartDate(newDate);
+                  const newDateTime = new Date(e.target.value);
+                  if (!isNaN(newDateTime.getTime())) {
+                    setStartDateTime(newDateTime);
+                  }
                 }}
+                step="300"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Time</label>
-              <TimeSelect
-                value={startTime}
-                onChange={setStartTime}
-                isOpen={openDropdown === "time"}
-                onToggle={() => setOpenDropdown(openDropdown === "time" ? null : "time")}
-              />
-            </div>
-          </div>
 
-          {selectedService && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Duration</label>
-              <div className="flex items-center gap-3">
+            {selectedService && (
+              <div className="space-y-2 flex-shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-medium">Duration</label>
+                  {customDuration !== selectedService.durationMinutes && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomDuration(selectedService.durationMinutes)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center rounded-lg border border-input bg-background">
                   <button
                     type="button"
@@ -361,7 +365,7 @@ export function AppointmentModal({
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="px-4 py-2 text-sm font-medium min-w-[80px] text-center">
+                  <span className="px-3 py-2 text-sm font-medium text-center whitespace-nowrap">
                     {customDuration} min
                   </span>
                   <button
@@ -372,19 +376,18 @@ export function AppointmentModal({
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                {customDuration !== selectedService.durationMinutes && (
-                  <button
-                    type="button"
-                    onClick={() => setCustomDuration(selectedService.durationMinutes)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Reset to default ({selectedService.durationMinutes} min)
-                  </button>
-                )}
               </div>
-              <div className="text-sm text-muted-foreground">
-                Ends at <span className="font-medium text-foreground">{endTime}</span>
-              </div>
+            )}
+          </div>
+
+          {selectedService && (
+            <div className="text-sm text-muted-foreground">
+              <span className={cn(startOverlaps && "text-red-600 font-medium")}>{formatTime(startDateTime)}</span>
+              {" → "}
+              <span className={cn("font-medium", endOverlaps ? "text-red-600" : "text-foreground")}>{endTime}</span>
+              {hasOverlap && (
+                <span className="ml-2 text-red-600 text-xs">Overlaps with existing appointment</span>
+              )}
             </div>
           )}
 
@@ -440,55 +443,3 @@ export function AppointmentModal({
   );
 }
 
-function TimeSelect({
-  value,
-  onChange,
-  isOpen,
-  onToggle,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  const timeSlots = Array.from({ length: (23 - 8 + 1) * 4 }, (_, i) => {
-    const hour = 8 + Math.floor(i / 4);
-    const minute = (i % 4) * 15;
-    return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-  });
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={onToggle}
-        className={cn(
-          "w-full rounded-lg border border-input bg-background px-3 py-2 text-left text-sm outline-none",
-          isOpen && "ring-2 ring-ring"
-        )}
-      >
-        {value}
-      </button>
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-48 overflow-auto rounded-lg border border-border bg-card shadow-lg">
-          {timeSlots.map((slot) => (
-            <button
-              key={slot}
-              type="button"
-              onClick={() => {
-                onChange(slot);
-                onToggle();
-              }}
-              className={cn(
-                "w-full px-3 py-2 text-left text-sm hover:bg-muted",
-                slot === value && "bg-primary/10 font-medium"
-              )}
-            >
-              {slot}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
