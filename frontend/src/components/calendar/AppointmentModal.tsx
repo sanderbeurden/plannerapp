@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Search, Loader2 } from "lucide-react";
+import { X, Search, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
@@ -39,6 +39,17 @@ export function AppointmentModal({
   const [selectedService, setSelectedService] = useState<Service | null>(
     appointment?.service ?? null
   );
+  // Custom duration for this appointment (defaults to service duration, adjustable in 5-min increments)
+  const [customDuration, setCustomDuration] = useState<number>(() => {
+    if (appointment) {
+      // Calculate duration from existing appointment
+      const start = new Date(appointment.startUtc);
+      const end = new Date(appointment.endUtc);
+      return Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    }
+    // Default for new appointments (will be updated when service is selected)
+    return 30;
+  });
   const [startDate, setStartDate] = useState(() => {
     if (appointment) return new Date(appointment.startUtc);
     if (defaultTimeSlot) return defaultTimeSlot.start;
@@ -100,7 +111,7 @@ export function AppointmentModal({
     const [hours, minutes] = startTime.split(":").map(Number);
     const start = new Date(startDate);
     start.setHours(hours, minutes, 0, 0);
-    const end = new Date(start.getTime() + selectedService.durationMinutes * 60 * 1000);
+    const end = new Date(start.getTime() + customDuration * 60 * 1000);
 
     setSaving(true);
     try {
@@ -130,7 +141,7 @@ export function AppointmentModal({
     ? (() => {
         const [hours, minutes] = startTime.split(":").map(Number);
         const end = new Date(startDate);
-        end.setHours(hours, minutes + selectedService.durationMinutes, 0, 0);
+        end.setHours(hours, minutes + customDuration, 0, 0);
         return formatTime(end);
       })()
     : null;
@@ -281,6 +292,7 @@ export function AppointmentModal({
                             className="w-full flex items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
                             onClick={() => {
                               setSelectedService(service);
+                              setCustomDuration(service.durationMinutes);
                               setOpenDropdown(null);
                               setServiceSearch("");
                             }}
@@ -337,9 +349,42 @@ export function AppointmentModal({
           </div>
 
           {selectedService && (
-            <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
-              <span className="text-muted-foreground">Ends at: </span>
-              <span className="font-medium">{endTime}</span>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Duration</label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center rounded-lg border border-input bg-background">
+                  <button
+                    type="button"
+                    onClick={() => setCustomDuration(Math.max(5, customDuration - 5))}
+                    className="px-3 py-2 hover:bg-muted rounded-l-lg transition-colors"
+                    disabled={customDuration <= 5}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="px-4 py-2 text-sm font-medium min-w-[80px] text-center">
+                    {customDuration} min
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomDuration(customDuration + 5)}
+                    className="px-3 py-2 hover:bg-muted rounded-r-lg transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {customDuration !== selectedService.durationMinutes && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomDuration(selectedService.durationMinutes)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to default ({selectedService.durationMinutes} min)
+                  </button>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Ends at <span className="font-medium text-foreground">{endTime}</span>
+              </div>
             </div>
           )}
 
