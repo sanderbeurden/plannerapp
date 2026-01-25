@@ -15,7 +15,7 @@ type DayViewProps = {
 
 const START_HOUR = 8;
 const END_HOUR = 23;
-const HOUR_HEIGHT = 80;
+const HOUR_HEIGHT = 112; // 28px per 15-min slot for better touch targets
 
 export function DayView({
   appointments,

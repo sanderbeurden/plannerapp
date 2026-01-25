@@ -76,7 +76,7 @@ export function TimeGrid({
                 }}
               >
                 {/* Show time hint on hover */}
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   {hour.toString().padStart(2, "0")}:{(quarterIndex * 15).toString().padStart(2, "0")}
                 </span>
               </button>
