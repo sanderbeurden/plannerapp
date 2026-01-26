@@ -1,107 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Search, Loader2, Minus, Plus } from "lucide-react";
+import { X, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
-import { formatTime } from "./hooks/useDateUtils";
 import { useServices, useClients } from "./hooks/useAppointments";
 
-type TimelinePreviewProps = {
-  startDateTime: Date;
-  duration: number;
-  existingAppointments: AppointmentWithDetails[];
-  currentAppointmentId?: string;
-  hasService: boolean;
-};
 
-function TimelinePreview({
-  startDateTime,
-  duration,
-  existingAppointments,
-  currentAppointmentId,
-  hasService,
-}: TimelinePreviewProps) {
-  const previewStart = new Date(startDateTime.getTime() - 30 * 60 * 1000);
-  const previewEnd = new Date(startDateTime.getTime() + duration * 60 * 1000 + 30 * 60 * 1000);
-  const totalMinutes = (previewEnd.getTime() - previewStart.getTime()) / (60 * 1000);
-
-  const timeSlots: { time: Date; label: string }[] = [];
-  const slotTime = new Date(previewStart);
-  slotTime.setMinutes(Math.floor(slotTime.getMinutes() / 30) * 30, 0, 0);
-  while (slotTime <= previewEnd) {
-    timeSlots.push({ time: new Date(slotTime), label: formatTime(slotTime) });
-    slotTime.setMinutes(slotTime.getMinutes() + 30);
-  }
-
-  const relevantAppointments = existingAppointments.filter((apt) => {
-    if (apt.id === currentAppointmentId) return false;
-    if (apt.status === "cancelled") return false;
-    const aptStart = new Date(apt.startUtc);
-    const aptEnd = new Date(apt.endUtc);
-    return aptEnd > previewStart && aptStart < previewEnd;
-  });
-
-  const getPosition = (time: Date) => {
-    const minutes = (time.getTime() - previewStart.getTime()) / (60 * 1000);
-    return Math.max(0, Math.min(100, (minutes / totalMinutes) * 100));
-  };
-
-  const appointmentEnd = new Date(startDateTime.getTime() + duration * 60 * 1000);
-
-  return (
-    <div className="relative h-full min-h-32 border border-border rounded-lg bg-muted/30 overflow-hidden pl-9">
-      {timeSlots.map(({ time, label }) => {
-        const top = getPosition(time);
-        if (top < 0 || top > 100) return null;
-        return (
-          <div
-            key={label}
-            className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${top}%` }}
-          >
-            <div className="w-full border-t border-border/50" />
-            <span className="absolute left-1 text-[10px] text-muted-foreground bg-muted/30 px-0.5 -translate-y-1/2">
-              {label}
-            </span>
-          </div>
-        );
-      })}
-
-      {relevantAppointments.map((apt) => {
-        const aptStart = new Date(apt.startUtc);
-        const aptEnd = new Date(apt.endUtc);
-        const top = getPosition(aptStart);
-        const bottom = getPosition(aptEnd);
-        const height = bottom - top;
-        return (
-          <div
-            key={apt.id}
-            className="absolute left-9 right-1 rounded bg-stone-200/60 border border-stone-300/80"
-            style={{ top: `${top}%`, height: `${height}%`, minHeight: 4 }}
-            title={`${apt.client?.fullName} - ${apt.service?.name}`}
-          >
-            <span className="text-[9px] text-muted-foreground px-1 truncate block">
-              {apt.client?.fullName}
-            </span>
-          </div>
-        );
-      })}
-
-      {hasService && (
-        <div
-          className="absolute left-9 right-1 rounded bg-primary/20 border-2 border-primary"
-          style={{
-            top: `${getPosition(startDateTime)}%`,
-            height: `${getPosition(appointmentEnd) - getPosition(startDateTime)}%`,
-            minHeight: 8,
-          }}
-        >
-          <span className="text-[10px] text-primary font-medium px-1">New</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 type AppointmentModalProps = {
   mode: "create" | "edit";
@@ -231,7 +135,6 @@ export function AppointmentModal({
   };
 
   const endDateTime = new Date(startDateTime.getTime() + customDuration * 60 * 1000);
-  const endTime = selectedService ? formatTime(endDateTime) : null;
 
   // Check for overlaps with existing appointments
   const checkOverlap = (time: Date) => {
@@ -421,88 +324,107 @@ export function AppointmentModal({
             </div>
           </div>
 
-          {/* Time Selection Section */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Time</label>
-            <div className={cn("grid gap-4", selectedService ? "grid-cols-2" : "grid-cols-1")}>
-              {/* Left Column: Controls */}
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Date & Time</label>
+          {/* When - Mobile-first minimal design */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">When</label>
+            
+            {/* Single stacked layout - works great on mobile */}
+            <div className="space-y-3">
+              {/* Date */}
+              <input
+                type="date"
+                value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [year, month, day] = e.target.value.split("-").map(Number);
+                  const newDate = new Date(startDateTime);
+                  newDate.setFullYear(year, month - 1, day);
+                  if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
+                }}
+                className="w-full rounded-lg border border-input bg-background px-3 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+              />
+
+              {/* Start Time - native time picker, great on mobile */}
+              <div
+                className={cn(
+                  "grid gap-2",
+                  selectedService ? "grid-cols-2" : "grid-cols-1"
+                )}
+              >
+                <div className="relative">
+                  <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
+                    Start
+                  </label>
                   <input
-                    type="datetime-local"
-                    value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}T${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
+                    type="time"
+                    value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
                     onChange={(e) => {
-                      const newDateTime = new Date(e.target.value);
-                      if (!isNaN(newDateTime.getTime())) {
-                        setStartDateTime(newDateTime);
-                      }
+                      const [hours, minutes] = e.target.value.split(":").map(Number);
+                      const newTime = new Date(startDateTime);
+                      newTime.setHours(hours, minutes, 0, 0);
+                      if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
                     }}
-                    step="300"
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    step="900"
+                    className={cn(
+                      "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                      startOverlaps ? "border-red-300 bg-red-50" : "border-input"
+                    )}
                   />
                 </div>
-
                 {selectedService && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="text-xs text-muted-foreground">Duration</label>
-                      {customDuration !== selectedService.durationMinutes && (
-                        <button
-                          type="button"
-                          onClick={() => setCustomDuration(selectedService.durationMinutes)}
-                          className="text-xs text-muted-foreground hover:text-foreground underline"
-                        >
-                          Reset
-                        </button>
+                  <div className="relative">
+                    <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
+                      End
+                    </label>
+                    <input
+                      type="time"
+                      value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":").map(Number);
+                        const newEnd = new Date(startDateTime);
+                        newEnd.setHours(hours, minutes, 0, 0);
+                        const newDuration = Math.round(
+                          (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
+                        );
+                        // Only allow valid durations (minimum 15 min, same day)
+                        if (newDuration >= 15) {
+                          setCustomDuration(newDuration);
+                        }
+                        // If duration would be negative (past midnight) or too short, ignore
+                        // The UI naturally prevents this since end time input is bounded by the day
+                      }}
+                      step="900"
+                      className={cn(
+                        "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                        endOverlaps ? "border-red-300 bg-red-50" : "border-input"
                       )}
-                    </div>
-                    <div className="flex items-center rounded-lg border border-input bg-background">
-                      <button
-                        type="button"
-                        onClick={() => setCustomDuration(Math.max(5, customDuration - 5))}
-                        className="px-3 py-2 hover:bg-muted rounded-l-lg transition-colors"
-                        disabled={customDuration <= 5}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="px-3 py-2 text-sm font-medium text-center whitespace-nowrap flex-1">
-                        {customDuration} min
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setCustomDuration(customDuration + 5)}
-                        className="px-3 py-2 hover:bg-muted rounded-r-lg transition-colors"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {selectedService && (
-                  <div className="text-sm">
-                    <span className={cn(startOverlaps && "text-red-600 font-medium")}>{formatTime(startDateTime)}</span>
-                    {" → "}
-                    <span className={cn("font-medium", endOverlaps ? "text-red-600" : "text-foreground")}>{endTime}</span>
-                    {hasOverlap && (
-                      <div className="text-red-600 text-xs mt-1">Overlaps with existing appointment</div>
-                    )}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Timeline Preview - only shown when service is selected */}
               {selectedService && (
-                <div className="h-full">
-                  <TimelinePreview
-                    startDateTime={startDateTime}
-                    duration={customDuration}
-                    existingAppointments={existingAppointments}
-                    currentAppointmentId={appointment?.id}
-                    hasService={true}
-                  />
-                </div>
+                <>
+                  {/* Duration display + quick adjust */}
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-sm text-muted-foreground">
+                      Duration: <span className="font-medium text-foreground">{customDuration} min</span>
+                      {customDuration !== selectedService.durationMinutes && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomDuration(selectedService.durationMinutes)}
+                          className="ml-2 text-xs underline hover:text-foreground"
+                        >
+                          reset
+                        </button>
+                      )}
+                    </span>
+                    {hasOverlap && (
+                      <span className="text-sm text-red-600 font-medium">
+                        Overlaps
+                      </span>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

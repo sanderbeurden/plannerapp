@@ -138,10 +138,15 @@ export function useAppointments(from: Date, to: Date) {
     [fetchAppointments]
   );
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
     appointments,
     loading,
     error,
+    clearError,
     refetch: fetchAppointments,
     createAppointment,
     updateAppointment,

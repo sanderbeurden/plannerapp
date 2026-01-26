@@ -17,7 +17,6 @@ export function Calendar() {
   const {
     appointments,
     loading,
-    error,
     createAppointment,
     updateAppointment,
     deleteAppointment,
@@ -25,6 +24,10 @@ export function Calendar() {
 
   const [popoverAppointment, setPopoverAppointment] =
     useState<AppointmentWithDetails | null>(null);
+  const [scrollTargetMinutes, setScrollTargetMinutes] = useState<number | null>(null);
+  const handleScrollTargetConsumed = useCallback(() => {
+    setScrollTargetMinutes(null);
+  }, []);
 
   const handleAppointmentClick = useCallback(
     (appointment: AppointmentWithDetails) => {
@@ -122,12 +125,6 @@ export function Calendar() {
         <div className="flex-1 min-w-0 space-y-4">
           <CalendarHeader />
 
-          {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
           {loading ? (
             <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card">
               <div className="flex flex-col items-center gap-3">
@@ -143,14 +140,19 @@ export function Calendar() {
               onAppointmentClick={handleAppointmentClick}
               onSlotClick={handleSlotClick}
               onReschedule={handleReschedule}
+              scrollToMinutes={scrollTargetMinutes}
+              onScrollTargetConsumed={handleScrollTargetConsumed}
             />
           ) : (
             <WeekView
               appointments={appointments}
               onAppointmentClick={handleAppointmentClick}
-              onDayClick={(date) => {
+              onDayClick={(date, scrollToMinutes) => {
                 calendarState.setSelectedDate(date);
                 calendarState.setView("day");
+                setScrollTargetMinutes(
+                  scrollToMinutes !== undefined ? scrollToMinutes : null
+                );
               }}
             />
           )}

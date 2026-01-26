@@ -11,22 +11,30 @@ type DayViewProps = {
   onAppointmentClick: (appointment: AppointmentWithDetails) => void;
   onSlotClick: (start: Date, end: Date) => void;
   onReschedule: (appointmentId: string, newStart: Date, newEnd: Date) => void;
+  scrollToMinutes?: number | null;
+  onScrollTargetConsumed?: () => void;
 };
 
 const START_HOUR = 8;
 const END_HOUR = 23;
 const HOUR_HEIGHT = 112; // 28px per 15-min slot for better touch targets
+const GRID_TOP_PADDING_PX = 12; // Matches TimeGrid pt-3
 
 export function DayView({
   appointments,
   onAppointmentClick,
   onSlotClick,
   onReschedule,
+  scrollToMinutes,
+  onScrollTargetConsumed,
 }: DayViewProps) {
   const { selectedDate, goToPrevious, goToNext } = useCalendar();
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const lastSelectedDateKeyRef = useRef<string | null>(null);
+  const lastManualScrollKeyRef = useRef<string | null>(null);
+  const lastAutoScrollKeyRef = useRef<string | null>(null);
 
   // Touch swipe navigation
   useEffect(() => {
@@ -67,6 +75,53 @@ export function DayView({
   const dayAppointments = appointments.filter((apt) =>
     isSameDay(new Date(apt.startUtc), selectedDate)
   );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const dateKey = selectedDate.toDateString();
+    if (lastSelectedDateKeyRef.current !== dateKey) {
+      lastSelectedDateKeyRef.current = dateKey;
+      lastManualScrollKeyRef.current = null;
+      lastAutoScrollKeyRef.current = null;
+    }
+
+    if (scrollToMinutes !== null && scrollToMinutes !== undefined) {
+      const totalMinutes = (END_HOUR - START_HOUR) * 60;
+      const clampedMinutes = Math.max(0, Math.min(scrollToMinutes, totalMinutes));
+      const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
+      const desiredScrollTop = targetOffset - container.clientHeight / 2;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+      requestAnimationFrame(() => {
+        container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+        if (onScrollTargetConsumed) {
+          onScrollTargetConsumed();
+        }
+      });
+      lastManualScrollKeyRef.current = dateKey;
+      return;
+    }
+
+    if (lastManualScrollKeyRef.current === dateKey) return;
+
+    if (!isSameDay(new Date(), selectedDate)) return;
+    if (lastAutoScrollKeyRef.current === dateKey) return;
+
+    const now = new Date();
+    const minutesFromStart = (now.getHours() - START_HOUR) * 60 + now.getMinutes();
+    const totalMinutes = (END_HOUR - START_HOUR) * 60;
+    const clampedMinutes = Math.max(0, Math.min(minutesFromStart, totalMinutes));
+    const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
+    const desiredScrollTop = targetOffset - container.clientHeight / 2;
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+    requestAnimationFrame(() => {
+      container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+    });
+    lastAutoScrollKeyRef.current = dateKey;
+  }, [selectedDate, scrollToMinutes, onScrollTargetConsumed]);
 
   const handleDragStart = useCallback(
     (e: React.DragEvent, appointment: AppointmentWithDetails) => {

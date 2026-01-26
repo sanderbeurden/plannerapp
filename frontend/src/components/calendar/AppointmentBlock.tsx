@@ -36,6 +36,7 @@ export function AppointmentBlock({
 
   const minHeightForDetails = 50;
   const showDetails = height >= minHeightForDetails;
+  const timeRange = `${formatTime(start)} - ${formatTime(end)}`;
 
   return (
     <div
@@ -69,7 +70,7 @@ export function AppointmentBlock({
           </span>
           {!showDetails && (
             <span className="text-xs text-muted-foreground flex-shrink-0">
-              {formatTime(start)}
+              {timeRange}
             </span>
           )}
         </div>
@@ -80,7 +81,7 @@ export function AppointmentBlock({
               {appointment.client.fullName}
             </span>
             <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
-              <span>{formatTime(start)}</span>
+              <span>{timeRange}</span>
               <span>{formatDuration(durationMinutes)}</span>
             </div>
           </>

@@ -55,6 +55,7 @@ export function TimeGrid({
         {hours.map((hour, hourIndex) => (
           <div
             key={hour}
+            data-hour={hour}
             className="relative border-b border-border"
             style={{ height: hourHeight }}
           >
