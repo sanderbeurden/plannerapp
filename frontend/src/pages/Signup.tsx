@@ -4,6 +4,7 @@ import { Lock, Mail, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 
 type Status = "idle" | "loading" | "error";
 
@@ -12,6 +13,7 @@ export function Signup() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const { signUp } = useAuth();
+  const { t } = useTranslation();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,9 +30,7 @@ export function Signup() {
       const result = await signUp(name, email, password);
       if (!result.ok) {
         setStatus("error");
-        setMessage(
-          "We couldn't create your account. It may already exist or signup is disabled."
-        );
+        setMessage(t("auth.signUpError"));
         return;
       }
 
@@ -39,7 +39,7 @@ export function Signup() {
       navigate("/app", { replace: true });
     } catch {
       setStatus("error");
-      setMessage("A network error occurred. Please try again.");
+      setMessage(t("auth.signUpError"));
     }
   }
 
@@ -49,12 +49,12 @@ export function Signup() {
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Planner
+              {t("landing.tagline")}
             </p>
-            <p className="text-lg font-semibold text-foreground">Salon Daybook</p>
+            <p className="text-lg font-semibold text-foreground">{t("landing.title")}</p>
           </div>
           <Button asChild variant="ghost">
-            <Link to="/">Back to home</Link>
+            <Link to="/">{t("common.back")}</Link>
           </Button>
         </div>
       </header>
@@ -62,15 +62,15 @@ export function Signup() {
       <main className="mx-auto flex w-full max-w-5xl items-center justify-center px-6 py-16">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-soft">
           <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-semibold">Create your owner account</h1>
+            <h1 className="text-3xl font-semibold">{t("auth.createAccount")}</h1>
             <p className="text-sm text-muted-foreground">
-              This creates the first (and only) owner for the salon.
+              {t("auth.getStarted")}
             </p>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <label className="block text-sm font-medium">
-              Full name
+              {t("auth.name")}
               <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
                 <UserRound className="h-4 w-4 text-muted-foreground" />
                 <input
@@ -83,7 +83,7 @@ export function Signup() {
               </div>
             </label>
             <label className="block text-sm font-medium">
-              Email
+              {t("auth.email")}
               <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <input
@@ -96,20 +96,20 @@ export function Signup() {
               </div>
             </label>
             <label className="block text-sm font-medium">
-              Password
+              {t("auth.password")}
               <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
                 <Lock className="h-4 w-4 text-muted-foreground" />
                 <input
                   className="w-full bg-transparent outline-none"
                   type="password"
                   name="password"
-                  placeholder="Create a password"
+                  placeholder="••••••••"
                   required
                 />
               </div>
             </label>
             <Button className="w-full" size="lg" disabled={status === "loading"}>
-              {status === "loading" ? "Creating account..." : "Create account"}
+              {status === "loading" ? `${t("auth.signUp")}...` : t("auth.signUp")}
             </Button>
           </form>
 
@@ -120,9 +120,9 @@ export function Signup() {
           ) : null}
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have access?{" "}
+            {t("auth.hasAccount")}{" "}
             <Link to="/login" className="font-semibold text-foreground">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         </div>

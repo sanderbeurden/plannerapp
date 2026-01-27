@@ -1,34 +1,18 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { useCalendar } from "./hooks/useCalendar";
 import {
   getMonthGrid,
-  addDays,
   isSameDay,
   isToday,
   startOfMonth,
 } from "./hooks/useDateUtils";
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
 export function MiniCalendar() {
   const { selectedDate, setSelectedDate, setView } = useCalendar();
+  const { t, monthNames, dayNamesShort } = useTranslation();
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
 
   const monthGrid = getMonthGrid(viewMonth);
@@ -59,7 +43,7 @@ export function MiniCalendar() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold">
-          {MONTH_NAMES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
+          {monthNames[viewMonth.getMonth()]} {viewMonth.getFullYear()}
         </h3>
         <div className="flex items-center gap-1">
           <button
@@ -79,12 +63,12 @@ export function MiniCalendar() {
 
       {/* Day names */}
       <div className="grid grid-cols-7 mb-1">
-        {DAY_NAMES.map((day) => (
+        {dayNamesShort.map((day) => (
           <div
             key={day}
             className="text-center text-xs font-medium text-muted-foreground py-1"
           >
-            {day}
+            {day.slice(0, 2)}
           </div>
         ))}
       </div>
@@ -125,7 +109,7 @@ export function MiniCalendar() {
           }}
           className="w-full text-sm text-primary hover:underline"
         >
-          Go to Today
+          {t("calendar.today")}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+// Default English arrays for fallback
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAY_NAMES = [
   "Sunday",
@@ -38,6 +39,35 @@ const SHORT_MONTH_NAMES = [
   "Nov",
   "Dec",
 ];
+
+// Localized formatting functions that accept translated arrays
+export function formatDateLocalized(
+  date: Date,
+  monthNames: string[]
+): string {
+  return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+export function formatDateShortLocalized(
+  date: Date,
+  monthNamesShort: string[]
+): string {
+  return `${monthNamesShort[date.getMonth()]} ${date.getDate()}`;
+}
+
+export function formatDayOfWeekLocalized(
+  date: Date,
+  dayNames: string[]
+): string {
+  return dayNames[date.getDay()];
+}
+
+export function formatDayOfWeekShortLocalized(
+  date: Date,
+  dayNamesShort: string[]
+): string {
+  return dayNamesShort[date.getDay()];
+}
 
 export function formatTime(date: Date): string {
   const hours = date.getHours();
@@ -205,6 +235,10 @@ export function useDateUtils() {
       formatDateShort,
       formatDayOfWeek,
       formatDayOfWeekShort,
+      formatDateLocalized,
+      formatDateShortLocalized,
+      formatDayOfWeekLocalized,
+      formatDayOfWeekShortLocalized,
       isSameDay,
       isToday,
       addDays,

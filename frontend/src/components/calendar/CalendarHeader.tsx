@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import { useCalendar } from "./hooks/useCalendar";
-import { formatDate, formatDayOfWeek, isToday } from "./hooks/useDateUtils";
+import { formatDateLocalized, formatDayOfWeekLocalized, isToday } from "./hooks/useDateUtils";
 import { cn } from "@/lib/utils";
 import type { CalendarView } from "@/types";
 
@@ -15,8 +16,9 @@ export function CalendarHeader() {
     goToNext,
     openCreateModal,
   } = useCalendar();
+  const { t, dayNames, monthNames } = useTranslation();
 
-  const todayLabel = isToday(selectedDate) ? "Today" : formatDayOfWeek(selectedDate);
+  const todayLabel = isToday(selectedDate) ? t("calendar.today") : formatDayOfWeekLocalized(selectedDate, dayNames);
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -27,7 +29,7 @@ export function CalendarHeader() {
           onClick={goToToday}
           className="hidden sm:inline-flex"
         >
-          Today
+          {t("calendar.today")}
         </Button>
         <div className="flex items-center gap-1">
           <Button
@@ -48,7 +50,7 @@ export function CalendarHeader() {
           </Button>
         </div>
         <div>
-          <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
+          <h2 className="text-xl font-semibold">{formatDateLocalized(selectedDate, monthNames)}</h2>
           <p className="text-sm text-muted-foreground">{todayLabel}</p>
         </div>
       </div>
@@ -60,12 +62,12 @@ export function CalendarHeader() {
           onClick={goToToday}
           className="sm:hidden"
         >
-          Today
+          {t("calendar.today")}
         </Button>
         <ViewSwitcher view={view} onViewChange={setView} />
         <Button onClick={() => openCreateModal()} className="hidden sm:inline-flex">
           <Plus className="h-4 w-4" />
-          New
+          {t("calendar.newAppointment")}
         </Button>
       </div>
     </div>
@@ -79,6 +81,7 @@ function ViewSwitcher({
   view: CalendarView;
   onViewChange: (view: CalendarView) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex rounded-lg border border-border bg-muted/50 p-1">
       <button
@@ -90,7 +93,7 @@ function ViewSwitcher({
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        Day
+        {t("calendar.day")}
       </button>
       <button
         onClick={() => onViewChange("week")}
@@ -101,7 +104,7 @@ function ViewSwitcher({
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        Week
+        {t("calendar.week")}
       </button>
     </div>
   );

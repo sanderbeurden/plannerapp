@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Settings, Scissors, Users } from "lucide-react";
+import { LogOut, Settings, Scissors, Users, Sliders } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/calendar";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -60,7 +62,7 @@ export function Dashboard() {
                       onClick={() => setShowSettings(false)}
                     >
                       <Scissors className="h-4 w-4" />
-                      Services
+                      {t("services.title")}
                     </Link>
                     <Link
                       to="/app/clients"
@@ -68,7 +70,15 @@ export function Dashboard() {
                       onClick={() => setShowSettings(false)}
                     >
                       <Users className="h-4 w-4" />
-                      Clients
+                      {t("clients.title")}
+                    </Link>
+                    <Link
+                      to="/app/settings"
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      onClick={() => setShowSettings(false)}
+                    >
+                      <Sliders className="h-4 w-4" />
+                      {t("common.settings")}
                     </Link>
                   </div>
                 </div>

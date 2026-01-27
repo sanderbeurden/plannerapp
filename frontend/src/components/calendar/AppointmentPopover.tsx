@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import { Clock, User, X, Edit, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { AppointmentWithDetails, AppointmentStatus } from "@/types";
-import { formatTime, formatDate, formatDuration, getDurationMinutes } from "./hooks/useDateUtils";
+import { formatTime, formatDateLocalized, formatDuration, getDurationMinutes } from "./hooks/useDateUtils";
 
 type AppointmentPopoverProps = {
   appointment: AppointmentWithDetails;
@@ -23,6 +24,7 @@ export function AppointmentPopover({
   const ref = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { t, monthNames } = useTranslation();
 
   useEffect(() => {
     // Store the previously focused element
@@ -81,17 +83,17 @@ export function AppointmentPopover({
 
   const statusConfig = {
     confirmed: {
-      label: "Confirmed",
+      label: t("appointment.confirmed"),
       icon: CheckCircle,
       className: "text-status-confirmed",
     },
     hold: {
-      label: "On Hold",
+      label: t("appointment.hold"),
       icon: AlertCircle,
       className: "text-status-hold",
     },
     cancelled: {
-      label: "Cancelled",
+      label: t("appointment.cancelled"),
       icon: X,
       className: "text-status-cancelled",
     },
@@ -146,14 +148,14 @@ export function AppointmentPopover({
                 {formatTime(start)} - {formatTime(end)}
               </div>
               <div className="text-muted-foreground">
-                {formatDate(start)} · {formatDuration(duration)}
+                {formatDateLocalized(start, monthNames)} · {formatDuration(duration)}
               </div>
             </div>
           </div>
 
           {appointment.notes && (
             <div className="rounded-lg bg-muted/50 p-3 text-sm">
-              <div className="text-xs font-medium text-muted-foreground mb-1">Notes</div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">{t("appointment.notes")}</div>
               <div>{appointment.notes}</div>
             </div>
           )}
@@ -168,7 +170,7 @@ export function AppointmentPopover({
                 onClick={() => onStatusChange("confirmed")}
               >
                 <CheckCircle className="h-4 w-4" />
-                Confirm
+                {t("common.confirm")}
               </Button>
             )}
             {appointment.status === "confirmed" && (
@@ -178,12 +180,12 @@ export function AppointmentPopover({
                 onClick={() => onStatusChange("hold")}
               >
                 <AlertCircle className="h-4 w-4" />
-                Put on Hold
+                {t("appointment.hold")}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={onEdit}>
               <Edit className="h-4 w-4" />
-              Edit
+              {t("common.edit")}
             </Button>
             <Button
               variant="outline"
@@ -192,7 +194,7 @@ export function AppointmentPopover({
               className="text-status-cancelled hover:text-status-cancelled"
             >
               <X className="h-4 w-4" />
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         )}
@@ -205,7 +207,7 @@ export function AppointmentPopover({
             className="text-destructive hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
-            Delete Appointment
+            {t("common.delete")}
           </Button>
         </div>
       </div>

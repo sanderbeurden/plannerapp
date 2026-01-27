@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Trash2, Check, X, Mail, Phone, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import { useClients } from "@/components/calendar/hooks/useAppointments";
 import type { Client } from "@/types";
 
 export function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const { clients, loading, createClient, updateClient, deleteClient } = useClients(searchQuery);
+  const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,9 +103,9 @@ export function Clients() {
           </Link>
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Settings
+              {t("common.settings")}
             </p>
-            <h1 className="text-lg font-semibold">Clients</h1>
+            <h1 className="text-lg font-semibold">{t("clients.title")}</h1>
           </div>
         </div>
       </header>
@@ -117,7 +119,7 @@ export function Clients() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search clients..."
+              placeholder={t("clients.searchPlaceholder")}
               className="w-full rounded-lg border border-input bg-background pl-10 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -127,31 +129,31 @@ export function Clients() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">First name *</label>
+                  <label className="text-sm font-medium">{t("clients.firstName")} *</label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
+                    placeholder={t("clients.firstName")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     autoFocus
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Last name *</label>
+                  <label className="text-sm font-medium">{t("clients.lastName")} *</label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
+                    placeholder={t("clients.lastName")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Email</label>
+                    <label className="text-sm font-medium">{t("clients.email")}</label>
                     <input
                       type="email"
                       value={email}
@@ -161,7 +163,7 @@ export function Clients() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Phone</label>
+                    <label className="text-sm font-medium">{t("clients.phone")}</label>
                     <input
                       type="tel"
                       value={phone}
@@ -172,25 +174,25 @@ export function Clients() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Notes</label>
+                  <label className="text-sm font-medium">{t("appointment.notes")}</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Any notes about this client..."
+                    placeholder={`${t("appointment.notes")}...`}
                     rows={2}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
                   />
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" onClick={cancelEditing} disabled={saving}>
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     onClick={handleCreate}
                     disabled={!firstName.trim() || !lastName.trim() || saving}
                   >
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Add Client
+                    {t("common.add")}
                   </Button>
                 </div>
               </div>
@@ -206,7 +208,7 @@ export function Clients() {
               variant="outline"
             >
               <Plus className="h-4 w-4" />
-              Add New Client
+              {t("clients.addNew")}
             </Button>
           )}
 
@@ -221,11 +223,11 @@ export function Clients() {
           {!loading && clients.length === 0 && !isCreating ? (
             <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 text-center">
               <p className="text-muted-foreground">
-                {searchQuery ? "No clients found" : "No clients yet"}
+                {searchQuery ? t("clients.noClients") : t("clients.noClients")}
               </p>
               {!searchQuery && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Add your first client to get started
+                  {t("clients.noClientsHint")}
                 </p>
               )}
             </div>
@@ -239,7 +241,7 @@ export function Clients() {
                   {editingId === client.id ? (
                     <div className="p-4 space-y-4">
                       <div>
-                        <label className="text-sm font-medium">First name *</label>
+                        <label className="text-sm font-medium">{t("clients.firstName")} *</label>
                         <input
                           type="text"
                           value={firstName}
@@ -250,7 +252,7 @@ export function Clients() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Last name *</label>
+                        <label className="text-sm font-medium">{t("clients.lastName")} *</label>
                         <input
                           type="text"
                           value={lastName}
@@ -261,7 +263,7 @@ export function Clients() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium">Email</label>
+                          <label className="text-sm font-medium">{t("clients.email")}</label>
                           <input
                             type="email"
                             value={email}
@@ -271,7 +273,7 @@ export function Clients() {
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Phone</label>
+                          <label className="text-sm font-medium">{t("clients.phone")}</label>
                           <input
                             type="tel"
                             value={phone}
@@ -282,11 +284,11 @@ export function Clients() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Notes</label>
+                        <label className="text-sm font-medium">{t("appointment.notes")}</label>
                         <textarea
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Any notes about this client..."
+                          placeholder={`${t("appointment.notes")}...`}
                           rows={2}
                           className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
                         />
@@ -294,7 +296,7 @@ export function Clients() {
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={cancelEditing} disabled={saving}>
                           <X className="h-4 w-4" />
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                         <Button
                           onClick={() => handleUpdate(client.id)}
@@ -302,15 +304,15 @@ export function Clients() {
                         >
                           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                           <Check className="h-4 w-4" />
-                          Save
+                          {t("common.save")}
                         </Button>
                       </div>
                     </div>
                   ) : deleteConfirm === client.id ? (
                     <div className="p-4 space-y-3">
-                      <p className="font-medium">Delete "{client.fullName}"?</p>
+                      <p className="font-medium">{t("clients.deleteConfirm", { name: client.fullName })}</p>
                       <p className="text-sm text-muted-foreground">
-                        This action cannot be undone.
+                        {t("clients.deleteWarning")}
                       </p>
                       {error && (
                         <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
@@ -319,11 +321,11 @@ export function Clients() {
                       )}
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={() => { setDeleteConfirm(null); setError(null); }} disabled={saving}>
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                         <Button variant="destructive" onClick={() => handleDelete(client.id)} disabled={saving}>
                           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                          Delete
+                          {t("common.delete")}
                         </Button>
                       </div>
                     </div>

@@ -2,29 +2,37 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { RequireAuth } from "@/components/RequireAuth";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
+import { SettingsProvider } from "@/lib/settings";
 import { Clients } from "@/pages/Clients";
 import { Dashboard } from "@/pages/Dashboard";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
 import { Services } from "@/pages/Services";
+import { Settings } from "@/pages/Settings";
 import { Signup } from "@/pages/Signup";
 
 export function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route element={<RequireAuth />}>
-            <Route path="/app" element={<Dashboard />} />
-            <Route path="/app/services" element={<Services />} />
-            <Route path="/app/clients" element={<Clients />} />
-          </Route>
-          <Route path="*" element={<Landing />} />
-        </Routes>
-      </AuthProvider>
+      <SettingsProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route element={<RequireAuth />}>
+                <Route path="/app" element={<Dashboard />} />
+                <Route path="/app/services" element={<Services />} />
+                <Route path="/app/clients" element={<Clients />} />
+                <Route path="/app/settings" element={<Settings />} />
+              </Route>
+              <Route path="*" element={<Landing />} />
+            </Routes>
+          </AuthProvider>
+        </I18nProvider>
+      </SettingsProvider>
     </BrowserRouter>
   );
 }

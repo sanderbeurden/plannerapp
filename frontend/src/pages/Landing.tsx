@@ -2,6 +2,7 @@ import { CalendarCheck, Clock, Scissors, Sparkles, UserRound } from "lucide-reac
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 const stats = [
   { label: "Setup time", value: "Under 2 minutes" },
@@ -54,6 +55,7 @@ const schedule = [
 
 export function Landing() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleStartClick = () => {
     navigate("/signup");
@@ -76,16 +78,16 @@ export function Landing() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                Planner
+                {t("landing.tagline")}
               </p>
-              <p className="text-lg font-semibold">Salon Daybook</p>
+              <p className="text-lg font-semibold">{t("landing.title")}</p>
             </div>
           </div>
           <div className="hidden items-center gap-3 md:flex">
             <Button asChild variant="ghost">
-              <Link to="/login">Log in</Link>
+              <Link to="/login">{t("landing.signIn")}</Link>
             </Button>
-            <Button onClick={handleStartClick}>Create owner account</Button>
+            <Button onClick={handleStartClick}>{t("landing.getStarted")}</Button>
           </div>
         </div>
       </header>
@@ -242,8 +244,8 @@ export function Landing() {
       <footer className="border-t border-border bg-card/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">Salon Daybook</p>
-            <p>Made for independent salon owners.</p>
+            <p className="font-semibold text-foreground">{t("landing.title")}</p>
+            <p>{t("landing.subtitle")}</p>
           </div>
           <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
             {[

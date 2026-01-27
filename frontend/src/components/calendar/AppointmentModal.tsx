@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
 import { useServices, useClients } from "./hooks/useAppointments";
 
@@ -32,6 +33,7 @@ export function AppointmentModal({
   onSave,
 }: AppointmentModalProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
   const { services, loading: loadingServices } = useServices();
   const [clientSearch, setClientSearch] = useState("");
   const { clients, loading: loadingClients } = useClients(clientSearch);
@@ -162,7 +164,7 @@ export function AppointmentModal({
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
           <h2 className="text-lg font-semibold">
-            {mode === "create" ? "New Appointment" : "Edit Appointment"}
+            {mode === "create" ? t("appointment.newAppointment") : t("appointment.editAppointment")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X className="h-4 w-4" />
@@ -178,7 +180,7 @@ export function AppointmentModal({
 
           {/* Client Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Client</label>
+            <label className="text-sm font-medium">{t("appointment.client")}</label>
             <div className="relative">
               <div
                 className={cn(
@@ -190,7 +192,7 @@ export function AppointmentModal({
                 {selectedClient ? (
                   <span>{selectedClient.fullName}</span>
                 ) : (
-                  <span className="text-muted-foreground">Select a client...</span>
+                  <span className="text-muted-foreground">{t("appointment.selectClient")}...</span>
                 )}
               </div>
 
@@ -203,7 +205,7 @@ export function AppointmentModal({
                         type="text"
                         value={clientSearch}
                         onChange={(e) => setClientSearch(e.target.value)}
-                        placeholder="Search clients..."
+                        placeholder={t("clients.searchPlaceholder")}
                         className="flex-1 bg-transparent text-sm outline-none"
                         autoFocus
                       />
@@ -250,7 +252,7 @@ export function AppointmentModal({
 
           {/* Service Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Service</label>
+            <label className="text-sm font-medium">{t("appointment.service")}</label>
             <div className="relative">
               <div
                 className={cn(
@@ -262,7 +264,7 @@ export function AppointmentModal({
                 {selectedService ? (
                   <span>{selectedService.name}</span>
                 ) : (
-                  <span className="text-muted-foreground">Select a service...</span>
+                  <span className="text-muted-foreground">{t("appointment.selectService")}...</span>
                 )}
               </div>
 
@@ -275,7 +277,7 @@ export function AppointmentModal({
                         type="text"
                         value={serviceSearch}
                         onChange={(e) => setServiceSearch(e.target.value)}
-                        placeholder="Search services..."
+                        placeholder={`${t("services.title")}...`}
                         className="flex-1 bg-transparent text-sm outline-none"
                         autoFocus
                       />
@@ -326,7 +328,7 @@ export function AppointmentModal({
 
           {/* When - Mobile-first minimal design */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">When</label>
+            <label className="text-sm font-medium">{t("appointment.time")}</label>
             
             {/* Single stacked layout - works great on mobile */}
             <div className="space-y-3">
@@ -431,7 +433,7 @@ export function AppointmentModal({
 
           {/* Status */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Status</label>
+            <label className="text-sm font-medium">{t("appointment.status")}</label>
             <div className="flex gap-2">
               {(["confirmed", "hold"] as const).map((s) => (
                 <button
@@ -447,7 +449,7 @@ export function AppointmentModal({
                   )}
                   onClick={() => setStatus(s)}
                 >
-                  {s === "confirmed" ? "Confirmed" : "Hold"}
+                  {s === "confirmed" ? t("appointment.confirmed") : t("appointment.hold")}
                 </button>
               ))}
             </div>
@@ -455,24 +457,24 @@ export function AppointmentModal({
 
           {/* Notes */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Notes (optional)</label>
+            <label className="text-sm font-medium">{t("appointment.notes")} ({t("common.optional")})</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-              placeholder="Add any notes..."
+              placeholder={`${t("appointment.notes")}...`}
             />
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "create" ? "Create Appointment" : "Save Changes"}
+              {mode === "create" ? t("appointment.schedule") : t("common.save")}
             </Button>
           </div>
         </form>

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Trash2, Check, X, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import { useServices } from "@/components/calendar/hooks/useAppointments";
 import type { Service } from "@/types";
 
 export function Services() {
   const { services, loading, createService, updateService, deleteService } = useServices();
+  const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,9 +101,9 @@ export function Services() {
           </Link>
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Settings
+              {t("common.settings")}
             </p>
-            <h1 className="text-lg font-semibold">Services</h1>
+            <h1 className="text-lg font-semibold">{t("services.title")}</h1>
           </div>
         </div>
       </header>
@@ -113,34 +115,34 @@ export function Services() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Service Name</label>
+                  <label className="text-sm font-medium">{t("services.serviceName")}</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Haircut, Manicure"
+                    placeholder={t("services.placeholder")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     autoFocus
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Duration</label>
+                    <label className="text-sm font-medium">{t("services.duration")}</label>
                     <select
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     >
-                      <option value="15">15 min</option>
-                      <option value="30">30 min</option>
-                      <option value="45">45 min</option>
-                      <option value="60">1 hour</option>
-                      <option value="90">1.5 hours</option>
-                      <option value="120">2 hours</option>
+                      <option value="15">15 {t("services.minutes")}</option>
+                      <option value="30">30 {t("services.minutes")}</option>
+                      <option value="45">45 {t("services.minutes")}</option>
+                      <option value="60">1 {t("services.hour")}</option>
+                      <option value="90">1.5 {t("services.hours")}</option>
+                      <option value="120">2 {t("services.hours")}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Price (optional)</label>
+                    <label className="text-sm font-medium">{t("services.price")} ({t("common.optional")})</label>
                     <input
                       type="number"
                       value={price}
@@ -154,11 +156,11 @@ export function Services() {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" onClick={cancelEditing} disabled={saving}>
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button onClick={handleCreate} disabled={!name.trim() || saving}>
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Add Service
+                    {t("common.add")}
                   </Button>
                 </div>
               </div>
@@ -174,16 +176,16 @@ export function Services() {
               variant="outline"
             >
               <Plus className="h-4 w-4" />
-              Add New Service
+              {t("services.addNew")}
             </Button>
           )}
 
           {/* Services list */}
           {services.length === 0 && !isCreating ? (
             <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 text-center">
-              <p className="text-muted-foreground">No services yet</p>
+              <p className="text-muted-foreground">{t("services.noServices")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Add your first service to get started
+                {t("services.noServicesHint")}
               </p>
             </div>
           ) : (
@@ -196,7 +198,7 @@ export function Services() {
                   {editingId === service.id ? (
                     <div className="p-4 space-y-4">
                       <div>
-                        <label className="text-sm font-medium">Service Name</label>
+                        <label className="text-sm font-medium">{t("services.serviceName")}</label>
                         <input
                           type="text"
                           value={name}
@@ -207,22 +209,22 @@ export function Services() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium">Duration</label>
+                          <label className="text-sm font-medium">{t("services.duration")}</label>
                           <select
                             value={duration}
                             onChange={(e) => setDuration(e.target.value)}
                             className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                           >
-                            <option value="15">15 min</option>
-                            <option value="30">30 min</option>
-                            <option value="45">45 min</option>
-                            <option value="60">1 hour</option>
-                            <option value="90">1.5 hours</option>
-                            <option value="120">2 hours</option>
+                            <option value="15">15 {t("services.minutes")}</option>
+                            <option value="30">30 {t("services.minutes")}</option>
+                            <option value="45">45 {t("services.minutes")}</option>
+                            <option value="60">1 {t("services.hour")}</option>
+                            <option value="90">1.5 {t("services.hours")}</option>
+                            <option value="120">2 {t("services.hours")}</option>
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Price (optional)</label>
+                          <label className="text-sm font-medium">{t("services.price")} ({t("common.optional")})</label>
                           <input
                             type="number"
                             value={price}
@@ -237,28 +239,28 @@ export function Services() {
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={cancelEditing} disabled={saving}>
                           <X className="h-4 w-4" />
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                         <Button onClick={() => handleUpdate(service.id)} disabled={!name.trim() || saving}>
                           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                           <Check className="h-4 w-4" />
-                          Save
+                          {t("common.save")}
                         </Button>
                       </div>
                     </div>
                   ) : deleteConfirm === service.id ? (
                     <div className="p-4 space-y-3">
-                      <p className="font-medium">Delete "{service.name}"?</p>
+                      <p className="font-medium">{t("services.deleteConfirm", { name: service.name })}</p>
                       <p className="text-sm text-muted-foreground">
-                        This action cannot be undone. Existing appointments using this service will remain.
+                        {t("services.deleteWarning")}
                       </p>
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={saving}>
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                         <Button variant="destructive" onClick={() => handleDelete(service.id)} disabled={saving}>
                           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                          Delete
+                          {t("common.delete")}
                         </Button>
                       </div>
                     </div>
@@ -269,7 +271,7 @@ export function Services() {
                         <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
-                            {service.durationMinutes} min
+                            {service.durationMinutes} {t("services.minutes")}
                           </span>
                           {service.priceCents !== null && (
                             <span>

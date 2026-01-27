@@ -3,6 +3,7 @@ import { TimeGrid } from "./TimeGrid";
 import { NowIndicator } from "./NowIndicator";
 import { AppointmentBlock } from "./AppointmentBlock";
 import { useCalendar } from "./hooks/useCalendar";
+import { useSettings } from "@/lib/settings";
 import type { AppointmentWithDetails } from "@/types";
 import { isSameDay, setTimeOnDate } from "./hooks/useDateUtils";
 
@@ -15,8 +16,6 @@ type DayViewProps = {
   onScrollTargetConsumed?: () => void;
 };
 
-const START_HOUR = 8;
-const END_HOUR = 23;
 const HOUR_HEIGHT = 112; // 28px per 15-min slot for better touch targets
 const GRID_TOP_PADDING_PX = 12; // Matches TimeGrid pt-3
 
@@ -29,6 +28,9 @@ export function DayView({
   onScrollTargetConsumed,
 }: DayViewProps) {
   const { selectedDate, goToPrevious, goToNext } = useCalendar();
+  const { settings } = useSettings();
+  const START_HOUR = settings.calendarStartHour;
+  const END_HOUR = settings.calendarEndHour;
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);

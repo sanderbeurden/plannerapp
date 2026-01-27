@@ -1,8 +1,10 @@
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/lib/settings";
+import { useTranslation } from "@/lib/i18n";
 import { useCalendar } from "./hooks/useCalendar";
 import {
   getWeekDays,
-  formatDayOfWeekShort,
+  formatDayOfWeekShortLocalized,
   getDurationMinutes,
   isSameDay,
   isToday,
@@ -15,20 +17,22 @@ type WeekViewProps = {
   onDayClick: (date: Date, scrollToMinutes?: number) => void;
 };
 
-const MOBILE_START_HOUR = 8;
-const MOBILE_END_HOUR = 23;
-const MOBILE_HOURS = Array.from(
-  { length: MOBILE_END_HOUR - MOBILE_START_HOUR },
-  (_, i) => MOBILE_START_HOUR + i
-);
-
 export function WeekView({
   appointments,
   onAppointmentClick,
   onDayClick,
 }: WeekViewProps) {
   const { selectedDate } = useCalendar();
+  const { settings } = useSettings();
+  const { dayNamesShort } = useTranslation();
   const weekDays = getWeekDays(selectedDate);
+
+  const MOBILE_START_HOUR = settings.calendarStartHour;
+  const MOBILE_END_HOUR = settings.calendarEndHour;
+  const MOBILE_HOURS = Array.from(
+    { length: MOBILE_END_HOUR - MOBILE_START_HOUR },
+    (_, i) => MOBILE_START_HOUR + i
+  );
 
   const getAppointmentsForDay = (date: Date) =>
     appointments.filter((apt) => isSameDay(new Date(apt.startUtc), date));
@@ -86,7 +90,7 @@ export function WeekView({
                   onClick={() => onDayClick(day)}
                 >
                   <span className="text-[9px] uppercase text-muted-foreground">
-                    {formatDayOfWeekShort(day)}
+                    {formatDayOfWeekShortLocalized(day, dayNamesShort)}
                   </span>
                   <span
                     className={cn(
@@ -198,7 +202,7 @@ export function WeekView({
               onClick={() => onDayClick(day)}
             >
               <span className="text-xs font-medium text-muted-foreground">
-                {formatDayOfWeekShort(day)}
+                {formatDayOfWeekShortLocalized(day, dayNamesShort)}
               </span>
               <span
                 className={cn(
