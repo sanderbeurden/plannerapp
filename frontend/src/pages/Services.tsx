@@ -6,6 +6,11 @@ import { useTranslation } from "@/lib/i18n";
 import { useServices } from "@/components/calendar/hooks/useAppointments";
 import type { Service } from "@/types";
 
+function capitalizeFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function Services() {
   const { services, loading, createService, updateService, deleteService } = useServices();
   const { t } = useTranslation();
@@ -119,7 +124,7 @@ export function Services() {
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => setName(capitalizeFirst(e.target.value))}
                     placeholder={t("services.placeholder")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     autoFocus
@@ -202,7 +207,7 @@ export function Services() {
                         <input
                           type="text"
                           value={name}
-                          onChange={(e) => setName(e.target.value)}
+                          onChange={(e) => setName(capitalizeFirst(e.target.value))}
                           className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                           autoFocus
                         />

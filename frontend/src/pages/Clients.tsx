@@ -6,6 +6,11 @@ import { useTranslation } from "@/lib/i18n";
 import { useClients } from "@/components/calendar/hooks/useAppointments";
 import type { Client } from "@/types";
 
+function capitalizeFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const { clients, loading, createClient, updateClient, deleteClient } = useClients(searchQuery);
@@ -133,7 +138,7 @@ export function Clients() {
                   <input
                     type="text"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => setFirstName(capitalizeFirst(e.target.value))}
                     placeholder={t("clients.firstName")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     autoFocus
@@ -145,7 +150,7 @@ export function Clients() {
                   <input
                     type="text"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => setLastName(capitalizeFirst(e.target.value))}
                     placeholder={t("clients.lastName")}
                     className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     required
@@ -245,7 +250,7 @@ export function Clients() {
                         <input
                           type="text"
                           value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
+                          onChange={(e) => setFirstName(capitalizeFirst(e.target.value))}
                           className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                           autoFocus
                           required
@@ -256,7 +261,7 @@ export function Clients() {
                         <input
                           type="text"
                           value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
+                          onChange={(e) => setLastName(capitalizeFirst(e.target.value))}
                           className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                           required
                         />

@@ -162,7 +162,7 @@ export function AppointmentModal({
         ref={ref}
         className="w-full max-w-lg max-h-[90vh] overflow-auto rounded-2xl border border-border bg-card shadow-soft animate-appointment-appear"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-3">
           <h2 className="text-lg font-semibold">
             {mode === "create" ? t("appointment.newAppointment") : t("appointment.editAppointment")}
           </h2>
@@ -171,7 +171,7 @@ export function AppointmentModal({
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
               {error}
@@ -179,7 +179,7 @@ export function AppointmentModal({
           )}
 
           {/* Client Selection */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">{t("appointment.client")}</label>
             <div className="relative">
               <div
@@ -251,7 +251,7 @@ export function AppointmentModal({
           </div>
 
           {/* Service Selection */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">{t("appointment.service")}</label>
             <div className="relative">
               <div
@@ -303,9 +303,9 @@ export function AppointmentModal({
                             }}
                           >
                             <span>{service.name}</span>
-                            <span className="text-muted-foreground">
-                              {service.durationMinutes} min
-                            </span>
+                        <span className="text-muted-foreground">
+                          {service.durationMinutes} {t("services.minutes")}
+                        </span>
                           </button>
                         ))}
                         {filteredServices.length === 0 && !serviceSearch && (
@@ -327,11 +327,11 @@ export function AppointmentModal({
           </div>
 
           {/* When - Mobile-first minimal design */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">{t("appointment.time")}</label>
             
             {/* Single stacked layout - works great on mobile */}
-            <div className="space-y-3">
+            <div className="space-y-1">
               {/* Date */}
               <input
                 type="date"
@@ -342,7 +342,7 @@ export function AppointmentModal({
                   newDate.setFullYear(year, month - 1, day);
                   if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
                 }}
-                className="w-full rounded-lg border border-input bg-background px-3 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-input bg-background px-3 py-3 text-base outline-none focus:ring-2 focus:ring-ring mb-2"
               />
 
               {/* Start Time - native time picker, great on mobile */}
@@ -409,7 +409,10 @@ export function AppointmentModal({
                   {/* Duration display + quick adjust */}
                   <div className="flex items-center justify-between px-1">
                     <span className="text-sm text-muted-foreground">
-                      Duration: <span className="font-medium text-foreground">{customDuration} min</span>
+                      {t("appointment.duration")}:{" "}
+                      <span className="font-medium text-foreground">
+                        {customDuration} {t("services.minutes")}
+                      </span>
                       {customDuration !== selectedService.durationMinutes && (
                         <button
                           type="button"
@@ -431,32 +434,34 @@ export function AppointmentModal({
             </div>
           </div>
 
-          {/* Status */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("appointment.status")}</label>
-            <div className="flex gap-2">
-              {(["confirmed", "hold"] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={cn(
-                    "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
-                    status === s
-                      ? s === "confirmed"
-                        ? "border-status-confirmed bg-status-confirmed-bg text-status-confirmed"
-                        : "border-status-hold bg-status-hold-bg text-status-hold"
-                      : "border-border hover:bg-muted"
-                  )}
-                  onClick={() => setStatus(s)}
-                >
-                  {s === "confirmed" ? t("appointment.confirmed") : t("appointment.hold")}
-                </button>
-              ))}
+          {/* Status (edit only) */}
+          {mode === "edit" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t("appointment.status")}</label>
+              <div className="flex gap-2">
+                {(["confirmed", "hold"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={cn(
+                      "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                      status === s
+                        ? s === "confirmed"
+                          ? "border-status-confirmed bg-status-confirmed-bg text-status-confirmed"
+                          : "border-status-hold bg-status-hold-bg text-status-hold"
+                        : "border-border hover:bg-muted"
+                    )}
+                    onClick={() => setStatus(s)}
+                  >
+                    {s === "confirmed" ? t("appointment.confirmed") : t("appointment.hold")}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Notes */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">{t("appointment.notes")} ({t("common.optional")})</label>
             <textarea
               value={notes}
