@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Search, Loader2 } from "lucide-react";
+import { X, Search, Loader2, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
 import { useServices, useClients } from "./hooks/useAppointments";
+
+function capitalizeFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 
 
@@ -36,7 +41,13 @@ export function AppointmentModal({
   const { t } = useTranslation();
   const { services, loading: loadingServices } = useServices();
   const [clientSearch, setClientSearch] = useState("");
-  const { clients, loading: loadingClients } = useClients(clientSearch);
+  const { clients, loading: loadingClients, createClient } = useClients(clientSearch);
+
+  // New client form state
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [newClientFirstName, setNewClientFirstName] = useState("");
+  const [newClientLastName, setNewClientLastName] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(
     appointment?.client ?? null
@@ -85,6 +96,32 @@ export function AppointmentModal({
   const filteredServices = services.filter((s) =>
     s.name.toLowerCase().includes(serviceSearch.toLowerCase())
   );
+
+  const handleCreateClient = async () => {
+    if (!newClientFirstName.trim() || !newClientLastName.trim()) return;
+
+    setCreatingClient(true);
+    const newClient = await createClient({
+      firstName: newClientFirstName.trim(),
+      lastName: newClientLastName.trim(),
+    });
+    setCreatingClient(false);
+
+    if (newClient) {
+      setSelectedClient(newClient);
+      setShowNewClientForm(false);
+      setNewClientFirstName("");
+      setNewClientLastName("");
+      setOpenDropdown(null);
+      setClientSearch("");
+    }
+  };
+
+  const resetNewClientForm = () => {
+    setShowNewClientForm(false);
+    setNewClientFirstName("");
+    setNewClientLastName("");
+  };
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -187,7 +224,14 @@ export function AppointmentModal({
                   "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
                   openDropdown === "client" && "ring-2 ring-ring"
                 )}
-                onClick={() => setOpenDropdown(openDropdown === "client" ? null : "client")}
+                onClick={() => {
+                  if (openDropdown === "client") {
+                    setOpenDropdown(null);
+                    resetNewClientForm();
+                  } else {
+                    setOpenDropdown("client");
+                  }
+                }}
               >
                 {selectedClient ? (
                   <span>{selectedClient.fullName}</span>
@@ -198,53 +242,110 @@ export function AppointmentModal({
 
               {openDropdown === "client" && (
                 <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border bg-card shadow-lg">
-                  <div className="p-2 border-b border-border">
-                    <div className="flex items-center gap-2 px-2">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={clientSearch}
-                        onChange={(e) => setClientSearch(e.target.value)}
-                        placeholder={t("clients.searchPlaceholder")}
-                        className="flex-1 bg-transparent text-sm outline-none"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-48 overflow-auto p-1">
-                    {loadingClients ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                  {showNewClientForm ? (
+                    // New client form
+                    <div className="p-3 space-y-3">
+                      <div className="text-sm font-medium">{t("clients.addNew")}</div>
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={newClientFirstName}
+                          onChange={(e) => setNewClientFirstName(capitalizeFirst(e.target.value))}
+                          placeholder={t("clients.firstName")}
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={newClientLastName}
+                          onChange={(e) => setNewClientLastName(capitalizeFirst(e.target.value))}
+                          placeholder={t("clients.lastName")}
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
                       </div>
-                    ) : (
-                      <>
-                        {clients.map((client) => (
-                          <button
-                            key={client.id}
-                            type="button"
-                            className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
-                            onClick={() => {
-                              setSelectedClient(client);
-                              setOpenDropdown(null);
-                              setClientSearch("");
-                            }}
-                          >
-                            {client.fullName}
-                          </button>
-                        ))}
-                        {clients.length === 0 && !clientSearch && (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No clients yet. Add clients in Settings → Clients.
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetNewClientForm}
+                          disabled={creatingClient}
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleCreateClient}
+                          disabled={!newClientFirstName.trim() || !newClientLastName.trim() || creatingClient}
+                        >
+                          {creatingClient ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                          {t("common.add")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Client search and list
+                    <>
+                      <div className="p-2 border-b border-border">
+                        <div className="flex items-center gap-2 px-2">
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            placeholder={t("clients.searchPlaceholder")}
+                            className="flex-1 bg-transparent text-sm outline-none"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-auto p-1">
+                        {loadingClients ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           </div>
+                        ) : (
+                          <>
+                            {clients.map((client) => (
+                              <button
+                                key={client.id}
+                                type="button"
+                                className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+                                onClick={() => {
+                                  setSelectedClient(client);
+                                  setOpenDropdown(null);
+                                  setClientSearch("");
+                                }}
+                              >
+                                {client.fullName}
+                              </button>
+                            ))}
+                            {clients.length === 0 && clientSearch && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                {t("clients.noClients")}
+                              </div>
+                            )}
+                          </>
                         )}
-                        {clients.length === 0 && clientSearch && (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No matching clients
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
+                      </div>
+                      {/* Add new client button */}
+                      <div className="border-t border-border p-1">
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary hover:bg-muted"
+                          onClick={() => setShowNewClientForm(true)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          {t("clients.addNew")}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

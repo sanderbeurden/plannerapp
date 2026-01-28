@@ -148,11 +148,13 @@ export function Calendar() {
               appointments={appointments}
               onAppointmentClick={handleAppointmentClick}
               onDayClick={(date, scrollToMinutes) => {
+                console.log('[Calendar] onDayClick - date:', date.toDateString(), 'scrollToMinutes:', scrollToMinutes);
                 calendarState.setSelectedDate(date);
                 calendarState.setView("day");
                 setScrollTargetMinutes(
                   scrollToMinutes !== undefined ? scrollToMinutes : null
                 );
+                console.log('[Calendar] setScrollTargetMinutes called with:', scrollToMinutes !== undefined ? scrollToMinutes : null);
               }}
             />
           )}

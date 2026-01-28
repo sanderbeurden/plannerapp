@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, useLayoutEffect } from "react";
 import { TimeGrid } from "./TimeGrid";
 import { NowIndicator } from "./NowIndicator";
 import { AppointmentBlock } from "./AppointmentBlock";
@@ -78,6 +78,56 @@ export function DayView({
     isSameDay(new Date(apt.startUtc), selectedDate)
   );
 
+  // Handle manual scroll (from WeekView click)
+  // Use useEffect with setTimeout to ensure scroll happens after render is complete
+  useEffect(() => {
+    console.log('[DayView] useEffect scroll - scrollToMinutes:', scrollToMinutes);
+
+    if (scrollToMinutes === null || scrollToMinutes === undefined) {
+      console.log('[DayView] scrollToMinutes is null/undefined, skipping');
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      console.log('[DayView] container is null, skipping');
+      return;
+    }
+
+    const dateKey = selectedDate.toDateString();
+
+    const totalMinutes = (END_HOUR - START_HOUR) * 60;
+    const clampedMinutes = Math.max(0, Math.min(scrollToMinutes, totalMinutes));
+    const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
+    const desiredScrollTop = targetOffset - container.clientHeight / 2;
+
+    // Defer scroll to next frame to ensure layout is complete
+    // Set the ref and call onScrollTargetConsumed INSIDE the timeout to survive StrictMode
+    const timeoutId = setTimeout(() => {
+      // Check again inside timeout in case something changed
+      if (lastManualScrollKeyRef.current === dateKey) {
+        console.log('[DayView] already scrolled for this date (inside timeout), skipping');
+        return;
+      }
+
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const finalScrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+      console.log('[DayView] Scrolling - desiredScrollTop:', desiredScrollTop, 'maxScrollTop:', maxScrollTop, 'finalScrollTop:', finalScrollTop);
+      container.scrollTop = finalScrollTop;
+      console.log('[DayView] After scroll, actual scrollTop:', container.scrollTop);
+
+      // Mark as scrolled AFTER successful scroll
+      lastManualScrollKeyRef.current = dateKey;
+
+      if (onScrollTargetConsumed) {
+        onScrollTargetConsumed();
+      }
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedDate, scrollToMinutes, onScrollTargetConsumed, START_HOUR, END_HOUR]);
+
+  // Handle auto-scroll to "now" for today's date
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -85,27 +135,10 @@ export function DayView({
     const dateKey = selectedDate.toDateString();
     if (lastSelectedDateKeyRef.current !== dateKey) {
       lastSelectedDateKeyRef.current = dateKey;
-      lastManualScrollKeyRef.current = null;
       lastAutoScrollKeyRef.current = null;
     }
 
-    if (scrollToMinutes !== null && scrollToMinutes !== undefined) {
-      const totalMinutes = (END_HOUR - START_HOUR) * 60;
-      const clampedMinutes = Math.max(0, Math.min(scrollToMinutes, totalMinutes));
-      const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
-      const desiredScrollTop = targetOffset - container.clientHeight / 2;
-      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-
-      requestAnimationFrame(() => {
-        container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
-        if (onScrollTargetConsumed) {
-          onScrollTargetConsumed();
-        }
-      });
-      lastManualScrollKeyRef.current = dateKey;
-      return;
-    }
-
+    // Skip auto-scroll if manual scroll was used
     if (lastManualScrollKeyRef.current === dateKey) return;
 
     if (!isSameDay(new Date(), selectedDate)) return;
@@ -123,7 +156,7 @@ export function DayView({
       container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
     });
     lastAutoScrollKeyRef.current = dateKey;
-  }, [selectedDate, scrollToMinutes, onScrollTargetConsumed]);
+  }, [selectedDate, START_HOUR, END_HOUR]);
 
   const handleDragStart = useCallback(
     (e: React.DragEvent, appointment: AppointmentWithDetails) => {

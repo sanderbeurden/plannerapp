@@ -107,66 +107,74 @@ export function WeekView({
           </div>
         </div>
 
-        {/* Time grid */}
-        <div className="grid grid-cols-[2rem_1fr]">
-          {/* Hour labels */}
-          <div className="relative">
-            {MOBILE_HOURS.map((hour, i) => (
-              <div
-                key={hour}
-                className={cn(
-                  "h-8 flex items-start justify-end pr-1 text-[10px] text-muted-foreground",
-                  i > 0 && "border-t border-border/30"
-                )}
-              >
+        {/* Time grid - row by row for perfect alignment */}
+        <div className="relative">
+          {/* Grid rows */}
+          {MOBILE_HOURS.map((hour, hourIndex) => (
+            <div
+              key={hour}
+              className={cn(
+                "grid grid-cols-[2rem_1fr] h-8",
+                hourIndex > 0 && "border-t border-border/30"
+              )}
+            >
+              {/* Hour label */}
+              <div className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground pt-px">
                 {hour}h
               </div>
-            ))}
-          </div>
 
-          {/* Day columns with appointments */}
-          <div className="grid grid-cols-7 relative">
-            {weekDays.map((day, dayIndex) => {
-              const dayAppointments = getAppointmentsForDay(day);
-              const isSelected = isSameDay(day, selectedDate);
-              
-              return (
-                <div
-                  key={dayIndex}
-                  className={cn(
-                    "relative",
-                    dayIndex < 6 && "border-r border-border/30",
-                    isSelected && "bg-primary/5"
-                  )}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const yOffset = e.clientY - rect.top;
-                    onDayClick(day, getClickMinutes(yOffset, rect.height));
-                  }}
-                >
-                  {/* Hour grid lines */}
-                  {MOBILE_HOURS.map((hour, i) => (
+              {/* Day cells for this hour */}
+              <div className="grid grid-cols-7">
+                {weekDays.map((day, dayIndex) => {
+                  const isSelected = isSameDay(day, selectedDate);
+                  return (
                     <div
-                      key={hour}
+                      key={dayIndex}
                       className={cn(
-                        "h-8",
-                        i > 0 && "border-t border-border/30"
+                        "h-full",
+                        dayIndex < 6 && "border-r border-border/30",
+                        isSelected && "bg-primary/5"
                       )}
+                      onClick={() => {
+                        const minutesFromStart = hourIndex * 60;
+                        console.log('[WeekView] Click - hour:', MOBILE_HOURS[hourIndex], 'minutesFromStart:', minutesFromStart);
+                        onDayClick(day, minutesFromStart);
+                      }}
                     />
-                  ))}
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
-                  {/* Appointments overlay */}
-                  <div className="absolute inset-0">
+          {/* Appointments overlay */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: 0,
+              left: '2rem',
+              right: 0,
+              height: `${MOBILE_HOURS.length * 32}px`
+            }}
+          >
+            <div className="grid grid-cols-7 h-full">
+              {weekDays.map((day, dayIndex) => {
+                const dayAppointments = getAppointmentsForDay(day);
+                return (
+                  <div key={dayIndex} className="relative h-full">
                     {dayAppointments.map((apt) => {
                       const { topPercent, heightPercent, isVisible } = getAppointmentPosition(apt);
                       if (!isVisible) return null;
-                      
+
                       return (
                         <button
                           key={apt.id}
-                          onClick={(e) => handleAppointmentTap(apt, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAppointmentTap(apt, e);
+                          }}
                           className={cn(
-                            "absolute left-0.5 right-0.5 rounded-sm active:opacity-80",
+                            "absolute left-0.5 right-0.5 rounded-sm active:opacity-80 pointer-events-auto",
                             apt.status === "confirmed" && "bg-status-confirmed",
                             apt.status === "hold" && "bg-status-hold",
                             apt.status === "cancelled" && "bg-status-cancelled opacity-50"
@@ -179,9 +187,9 @@ export function WeekView({
                       );
                     })}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
