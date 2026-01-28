@@ -148,13 +148,11 @@ export function Calendar() {
               appointments={appointments}
               onAppointmentClick={handleAppointmentClick}
               onDayClick={(date, scrollToMinutes) => {
-                console.log('[Calendar] onDayClick - date:', date.toDateString(), 'scrollToMinutes:', scrollToMinutes);
                 calendarState.setSelectedDate(date);
                 calendarState.setView("day");
                 setScrollTargetMinutes(
                   scrollToMinutes !== undefined ? scrollToMinutes : null
                 );
-                console.log('[Calendar] setScrollTargetMinutes called with:', scrollToMinutes !== undefined ? scrollToMinutes : null);
               }}
             />
           )}
@@ -187,13 +185,26 @@ export function Calendar() {
       )}
 
       {/* Mobile FAB */}
-      <Button
+      <button
         onClick={() => calendarState.openCreateModal()}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg sm:hidden z-40"
-        size="icon"
+        className="group fixed bottom-6 right-6 sm:hidden z-40"
       >
-        <Plus className="h-6 w-6" />
-      </Button>
+        {/* Button */}
+        <span className="relative flex h-16 w-16 items-center justify-center rounded-full
+          bg-gradient-to-b from-primary via-primary to-primary/90
+          shadow-[0_8px_30px_-6px] shadow-primary/50
+          ring-1 ring-white/10 ring-inset
+          group-active:scale-[0.92] group-active:shadow-[0_4px_15px_-4px]
+          transition-all duration-200 ease-out"
+        >
+          {/* Inner highlight */}
+          <span className="absolute inset-[2px] rounded-full bg-gradient-to-b from-white/20 to-transparent opacity-80" />
+
+          {/* Icon */}
+          <Plus className="relative h-7 w-7 text-primary-foreground drop-shadow-sm
+            group-active:rotate-90 transition-transform duration-200" />
+        </span>
+      </button>
     </CalendarContext.Provider>
   );
 }

@@ -1,24 +1,47 @@
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { useCalendar } from "./hooks/useCalendar";
-import { formatDateLocalized, formatDayOfWeekLocalized, isToday } from "./hooks/useDateUtils";
+import {
+  endOfWeek,
+  formatDateLocalized,
+  formatDayOfWeekLocalized,
+  isToday,
+  startOfWeek,
+} from "./hooks/useDateUtils";
 import { cn } from "@/lib/utils";
 import type { CalendarView } from "@/types";
+import { useMemo, useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function CalendarHeader() {
   const {
     selectedDate,
     view,
     setView,
+    setSelectedDate,
     goToToday,
     goToPrevious,
     goToNext,
     openCreateModal,
   } = useCalendar();
   const { t, dayNames, monthNames } = useTranslation();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const todayLabel = isToday(selectedDate) ? t("calendar.today") : formatDayOfWeekLocalized(selectedDate, dayNames);
+  const weekRange = useMemo(() => {
+    if (view !== "week") return null;
+    return { start: startOfWeek(selectedDate), end: endOfWeek(selectedDate) };
+  }, [selectedDate, view]);
+
+  const handleCalendarSelect = (date?: Date) => {
+    if (!date) return;
+    const nextDate = new Date(date);
+    nextDate.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+    setSelectedDate(nextDate);
+    setPickerOpen(false);
+  };
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -50,7 +73,43 @@ export function CalendarHeader() {
           </Button>
         </div>
         <div>
-          <h2 className="text-xl font-semibold">{formatDateLocalized(selectedDate, monthNames)}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">{formatDateLocalized(selectedDate, monthNames)}</h2>
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+                  aria-label={view === "week" ? t("calendar.week") : t("appointment.date")}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleCalendarSelect}
+                  modifiers={
+                    weekRange
+                      ? {
+                          selectedWeek: (date) =>
+                            date >= weekRange.start && date <= weekRange.end,
+                        }
+                      : undefined
+                  }
+                  modifiersClassNames={
+                    weekRange
+                      ? {
+                          selectedWeek: "bg-primary/10 text-foreground",
+                        }
+                      : undefined
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           <p className="text-sm text-muted-foreground">{todayLabel}</p>
         </div>
       </div>

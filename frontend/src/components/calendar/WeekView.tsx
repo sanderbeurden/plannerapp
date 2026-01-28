@@ -137,7 +137,6 @@ export function WeekView({
                       )}
                       onClick={() => {
                         const minutesFromStart = hourIndex * 60;
-                        console.log('[WeekView] Click - hour:', MOBILE_HOURS[hourIndex], 'minutesFromStart:', minutesFromStart);
                         onDayClick(day, minutesFromStart);
                       }}
                     />

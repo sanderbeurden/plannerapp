@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { TimeGrid } from "./TimeGrid";
 import { NowIndicator } from "./NowIndicator";
 import { AppointmentBlock } from "./AppointmentBlock";
@@ -81,18 +81,10 @@ export function DayView({
   // Handle manual scroll (from WeekView click)
   // Use useEffect with setTimeout to ensure scroll happens after render is complete
   useEffect(() => {
-    console.log('[DayView] useEffect scroll - scrollToMinutes:', scrollToMinutes);
-
-    if (scrollToMinutes === null || scrollToMinutes === undefined) {
-      console.log('[DayView] scrollToMinutes is null/undefined, skipping');
-      return;
-    }
+    if (scrollToMinutes === null || scrollToMinutes === undefined) return;
 
     const container = containerRef.current;
-    if (!container) {
-      console.log('[DayView] container is null, skipping');
-      return;
-    }
+    if (!container) return;
 
     const dateKey = selectedDate.toDateString();
 
@@ -105,16 +97,11 @@ export function DayView({
     // Set the ref and call onScrollTargetConsumed INSIDE the timeout to survive StrictMode
     const timeoutId = setTimeout(() => {
       // Check again inside timeout in case something changed
-      if (lastManualScrollKeyRef.current === dateKey) {
-        console.log('[DayView] already scrolled for this date (inside timeout), skipping');
-        return;
-      }
+      if (lastManualScrollKeyRef.current === dateKey) return;
 
       const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
       const finalScrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
-      console.log('[DayView] Scrolling - desiredScrollTop:', desiredScrollTop, 'maxScrollTop:', maxScrollTop, 'finalScrollTop:', finalScrollTop);
       container.scrollTop = finalScrollTop;
-      console.log('[DayView] After scroll, actual scrollTop:', container.scrollTop);
 
       // Mark as scrolled AFTER successful scroll
       lastManualScrollKeyRef.current = dateKey;
