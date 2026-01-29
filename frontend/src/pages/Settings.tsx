@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useSettings, type Language } from "@/lib/settings";
 import { useTranslation } from "@/lib/i18n";
 
@@ -9,6 +11,29 @@ const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
 export function Settings() {
   const { settings, updateSettings } = useSettings();
   const { t } = useTranslation();
+  const [exportMessage, setExportMessage] = useState("");
+
+  const handleExport = async (endpoint: string, filename: string) => {
+    setExportMessage("");
+    try {
+      const response = await fetch(endpoint, { credentials: "include" });
+      if (!response.ok) {
+        setExportMessage(t("settings.exportFailed"));
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setExportMessage(t("settings.exportFailed"));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -82,6 +107,46 @@ export function Settings() {
               </div>
             </div>
           </div>
+
+          {/* Data Export Section */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <div>
+              <h2 className="text-sm font-medium">{t("settings.exportTitle")}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("settings.exportHelp")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleExport(
+                    "/api/exports/clients",
+                    `clients-${new Date().toISOString().slice(0, 10)}.csv`
+                  )
+                }
+              >
+                <Download className="h-4 w-4" />
+                {t("settings.exportClients")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleExport(
+                    "/api/exports/appointments",
+                    `appointments-${new Date().toISOString().slice(0, 10)}.csv`
+                  )
+                }
+              >
+                <Download className="h-4 w-4" />
+                {t("settings.exportAppointments")}
+              </Button>
+            </div>
+            {exportMessage && (
+              <p className="text-sm text-red-600">{exportMessage}</p>
+            )}
+          </div>
+
         </div>
       </main>
     </div>

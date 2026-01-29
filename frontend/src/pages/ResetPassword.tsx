@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Lock, Mail, UserRound } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth";
 import { useTranslation } from "@/lib/i18n";
 
-type Status = "idle" | "loading" | "error" | "success";
+type Status = "idle" | "loading" | "success" | "error";
 
-export function Signup() {
+export function ResetPassword() {
+  const { t } = useTranslation();
+  const location = useLocation();
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
-  const { signUp } = useAuth();
-  const { t } = useTranslation();
+
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token") ?? "";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,28 +23,39 @@ export function Signup() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const name = String(formData.get("name") ?? "");
-    const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
+    const confirm = String(formData.get("confirm") ?? "");
+
+    if (password !== confirm) {
+      setStatus("error");
+      setMessage(t("auth.passwordsNoMatch"));
+      return;
+    }
 
     try {
-      const result = await signUp(name, email, password);
-      if (!result.ok) {
-        setStatus("error");
+      const response = await fetch("/api/auth/password-reset/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token, password }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { code?: string };
         const errorKey =
-          result.errorCode === "RATE_LIMIT"
-            ? "auth.rateLimited"
-            : result.errorCode === "AUTH_EMAIL_EXISTS"
-              ? "auth.emailExists"
+          data.code === "AUTH_TOKEN_INVALID"
+            ? "auth.passwordResetFailed"
+            : data.code === "AUTH_PASSWORD_TOO_LONG"
+              ? "auth.passwordTooLong"
               : "auth.signUpError";
+        setStatus("error");
         setMessage(t(errorKey));
         return;
       }
 
-      form.reset();
       setStatus("success");
-      setMessage(t("auth.verifyEmailSent"));
-      return;
+      setMessage(t("auth.passwordResetSuccess"));
+      form.reset();
     } catch {
       setStatus("error");
       setMessage(t("auth.signUpError"));
@@ -68,41 +81,12 @@ export function Signup() {
       <main className="mx-auto flex w-full max-w-5xl items-center justify-center px-6 py-16">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-soft">
           <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-semibold">{t("auth.createAccount")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("auth.getStarted")}
-            </p>
+            <h1 className="text-3xl font-semibold">{t("auth.passwordResetTitle")}</h1>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <label className="block text-sm font-medium">
-              {t("auth.name")}
-              <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
-                <UserRound className="h-4 w-4 text-muted-foreground" />
-                <input
-                  className="w-full bg-transparent outline-none"
-                  type="text"
-                  name="name"
-                  placeholder="Alex Carter"
-                  required
-                />
-              </div>
-            </label>
-            <label className="block text-sm font-medium">
-              {t("auth.email")}
-              <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <input
-                  className="w-full bg-transparent outline-none"
-                  type="email"
-                  name="email"
-                  placeholder="owner@salon.com"
-                  required
-                />
-              </div>
-            </label>
-            <label className="block text-sm font-medium">
-              {t("auth.password")}
+              {t("auth.newPassword")}
               <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
                 <Lock className="h-4 w-4 text-muted-foreground" />
                 <input
@@ -114,8 +98,21 @@ export function Signup() {
                 />
               </div>
             </label>
-            <Button className="w-full" size="lg" disabled={status === "loading"}>
-              {status === "loading" ? `${t("auth.signUp")}...` : t("auth.signUp")}
+            <label className="block text-sm font-medium">
+              {t("auth.confirmPassword")}
+              <div className="mt-2 flex items-center gap-2 rounded-2xl border border-input bg-background px-4 py-3 text-sm">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-transparent outline-none"
+                  type="password"
+                  name="confirm"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </label>
+            <Button className="w-full" size="lg" disabled={status === "loading" || !token}>
+              {status === "loading" ? `${t("auth.passwordReset")}...` : t("auth.passwordReset")}
             </Button>
           </form>
 
@@ -131,7 +128,6 @@ export function Signup() {
           ) : null}
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {t("auth.hasAccount")}{" "}
             <Link to="/login" className="font-semibold text-foreground">
               {t("auth.signIn")}
             </Link>

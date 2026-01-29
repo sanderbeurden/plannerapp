@@ -13,6 +13,7 @@ import {
 import { db } from "./db/client";
 import { jsonCreated, jsonError, jsonOk } from "./http";
 import { getClientIp, isRateLimited, logAuthFailure } from "./security";
+import { hashToken } from "./auth";
 import {
   mapAppointment,
   mapClient,
@@ -28,7 +29,7 @@ import {
   isValidIsoDate,
 } from "./validation";
 
-const app = new Hono<AppBindings>();
+export const app = new Hono<AppBindings>();
 app.use(logger());
 
 const port = Number(process.env.PORT ?? 3001);
@@ -38,6 +39,56 @@ const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .filter(Boolean);
 
 const PASSWORD_MAX_BYTES = 72;
+const EMAIL_VERIFY_EXPIRES_HOURS = 24;
+const PASSWORD_RESET_EXPIRES_HOURS = 2;
+const APP_BASE_URL = process.env.APP_BASE_URL ?? "http://localhost:5173";
+
+function validateEnvironment() {
+  const missing = [];
+  if (!process.env.CORS_ORIGIN) missing.push("CORS_ORIGIN");
+  if (!process.env.APP_BASE_URL) missing.push("APP_BASE_URL");
+
+  if (missing.length > 0) {
+    const message = `[env] Missing ${missing.join(
+      ", "
+    )}. Using defaults may be unsafe in production.`;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(message);
+    }
+    console.warn(message);
+  }
+}
+
+function csvEscape(value: unknown) {
+  if (value === null || value === undefined) return "";
+  const str = String(value);
+  if (/[",\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function toCsv(rows: Record<string, unknown>[], headers: string[]) {
+  const lines = [headers.join(",")];
+  for (const row of rows) {
+    lines.push(headers.map((key) => csvEscape(row[key])).join(","));
+  }
+  return lines.join("\n");
+}
+
+function createTokenWithExpiry(hours: number) {
+  const token = crypto.randomUUID();
+  const tokenHash = hashToken(token);
+  const expiresAt = Math.floor(Date.now() / 1000) + hours * 60 * 60;
+  return { token, tokenHash, expiresAt };
+}
+
+function sendEmail(to: string, subject: string, body: string) {
+  // Stub: replace with real email provider in production.
+  console.log(`[email] to=${to} subject="${subject}"\n${body}`);
+}
+
+validateEnvironment();
 
 app.use(
   "/api/*",
@@ -70,30 +121,41 @@ app.post("/api/auth/login", async c => {
   }
 
   if (!email || !password) {
-    return c.json({ error: "Email and password required." }, 400);
+    return jsonError(c, "Email and password required.", 400, "AUTH_REQUIRED_FIELDS");
   }
 
   if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
-    return c.json({ error: "Password too long." }, 400);
+    return jsonError(c, "Password too long.", 400, "AUTH_PASSWORD_TOO_LONG");
   }
 
   const user = db
     .query(
-      "SELECT id, name, email, password_hash FROM users WHERE email = ? LIMIT 1"
+      "SELECT id, name, email, password_hash, email_verified_at FROM users WHERE email = ? LIMIT 1"
     )
     .get(email) as
-    | { id: string; name: string; email: string; password_hash: string }
+    | {
+        id: string;
+        name: string;
+        email: string;
+        password_hash: string;
+        email_verified_at: string | null;
+      }
     | null;
 
   if (!user) {
     logAuthFailure({ email: emailKey, ip, reason: "invalid_credentials" });
-    return c.json({ error: "Invalid credentials." }, 401);
+    return jsonError(c, "Invalid credentials.", 401, "AUTH_INVALID_CREDENTIALS");
   }
 
   const passwordMatches = bcrypt.compareSync(password, user.password_hash);
   if (!passwordMatches) {
     logAuthFailure({ userId: user.id, email: emailKey, ip, reason: "invalid_credentials" });
-    return c.json({ error: "Invalid credentials." }, 401);
+    return jsonError(c, "Invalid credentials.", 401, "AUTH_INVALID_CREDENTIALS");
+  }
+
+  if (!user.email_verified_at) {
+    logAuthFailure({ userId: user.id, email: emailKey, ip, reason: "email_unverified" });
+    return jsonError(c, "Email not verified.", 403, "AUTH_EMAIL_NOT_VERIFIED");
   }
 
   const token = createSession(user.id);
@@ -125,11 +187,11 @@ app.post("/api/auth/signup", async c => {
   }
 
   if (!name || !email || !password) {
-    return c.json({ error: "Name, email, and password required." }, 400);
+    return jsonError(c, "Name, email, and password required.", 400, "AUTH_REQUIRED_FIELDS");
   }
 
   if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
-    return c.json({ error: "Password too long." }, 400);
+    return jsonError(c, "Password too long.", 400, "AUTH_PASSWORD_TOO_LONG");
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
@@ -144,16 +206,19 @@ app.post("/api/auth/signup", async c => {
     return jsonError(c, "Email already exists.", 409, "AUTH_EMAIL_EXISTS");
   }
 
-  const token = createSession(userId);
-  setSessionCookie(c, token);
+  const verification = createTokenWithExpiry(EMAIL_VERIFY_EXPIRES_HOURS);
+  db.query(
+    "INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)"
+  ).run(crypto.randomUUID(), userId, verification.tokenHash, verification.expiresAt);
 
-  return c.json({
-    user: {
-      id: userId,
-      name,
-      email,
-    },
-  });
+  const verifyLink = `${APP_BASE_URL}/verify?token=${verification.token}`;
+  sendEmail(
+    email,
+    "Verify your Salon Daybook account",
+    `Click to verify your email: ${verifyLink}`
+  );
+
+  return c.json({ ok: true, verificationRequired: true });
 });
 
 app.get("/api/auth/me", c => {
@@ -163,6 +228,154 @@ app.get("/api/auth/me", c => {
   }
 
   return c.json({ user });
+});
+
+app.post("/api/auth/verify", async c => {
+  const body = await c.req.json().catch(() => null);
+  const token = typeof body?.token === "string" ? body.token : "";
+  if (!token) {
+    return jsonError(c, "Token is required.", 400, "AUTH_TOKEN_REQUIRED");
+  }
+
+  const tokenHash = hashToken(token);
+  const row = db
+    .query(
+      "SELECT user_id, expires_at FROM email_verification_tokens WHERE token_hash = ? LIMIT 1"
+    )
+    .get(tokenHash) as { user_id: string; expires_at: number } | null;
+
+  if (!row || row.expires_at <= Math.floor(Date.now() / 1000)) {
+    return jsonError(c, "Invalid or expired token.", 400, "AUTH_TOKEN_INVALID");
+  }
+
+  db.query("UPDATE users SET email_verified_at = datetime('now') WHERE id = ?")
+    .run(row.user_id);
+  db.query("DELETE FROM email_verification_tokens WHERE user_id = ?").run(row.user_id);
+
+  return jsonOk(c, { ok: true });
+});
+
+app.post("/api/auth/verify/resend", async c => {
+  const body = await c.req.json().catch(() => null);
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const ip = getClientIp(c);
+  const emailKey = email.toLowerCase();
+
+  if (!email) {
+    return jsonError(c, "Email is required.", 400, "AUTH_REQUIRED_FIELDS");
+  }
+
+  if (
+    isRateLimited(`auth:verify:ip:${ip}`, { windowMs: 10 * 60 * 1000, max: 20 }) ||
+    (emailKey &&
+      isRateLimited(`auth:verify:${ip}:${emailKey}`, { windowMs: 10 * 60 * 1000, max: 5 }))
+  ) {
+    return jsonError(c, "Too many requests. Please try again later.", 429, "RATE_LIMIT");
+  }
+
+  const user = db
+    .query(
+      "SELECT id, email_verified_at FROM users WHERE email = ? LIMIT 1"
+    )
+    .get(email) as { id: string; email_verified_at: string | null } | null;
+
+  if (!user || user.email_verified_at) {
+    return jsonOk(c, { ok: true });
+  }
+
+  db.query("DELETE FROM email_verification_tokens WHERE user_id = ?").run(user.id);
+  const verification = createTokenWithExpiry(EMAIL_VERIFY_EXPIRES_HOURS);
+  db.query(
+    "INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)"
+  ).run(crypto.randomUUID(), user.id, verification.tokenHash, verification.expiresAt);
+
+  const verifyLink = `${APP_BASE_URL}/verify?token=${verification.token}`;
+  sendEmail(
+    email,
+    "Verify your Salon Daybook account",
+    `Click to verify your email: ${verifyLink}`
+  );
+
+  return jsonOk(c, { ok: true });
+});
+
+app.post("/api/auth/password-reset/request", async c => {
+  const body = await c.req.json().catch(() => null);
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const ip = getClientIp(c);
+  const emailKey = email.toLowerCase();
+
+  if (!email) {
+    return jsonError(c, "Email is required.", 400, "AUTH_REQUIRED_FIELDS");
+  }
+
+  if (
+    isRateLimited(`auth:reset:ip:${ip}`, { windowMs: 10 * 60 * 1000, max: 20 }) ||
+    (emailKey &&
+      isRateLimited(`auth:reset:${ip}:${emailKey}`, { windowMs: 10 * 60 * 1000, max: 5 }))
+  ) {
+    return jsonError(c, "Too many requests. Please try again later.", 429, "RATE_LIMIT");
+  }
+
+  const user = db
+    .query("SELECT id, email_verified_at FROM users WHERE email = ? LIMIT 1")
+    .get(email) as { id: string; email_verified_at: string | null } | null;
+
+  if (!user || !user.email_verified_at) {
+    return jsonOk(c, { ok: true });
+  }
+
+  db.query("DELETE FROM password_reset_tokens WHERE user_id = ?").run(user.id);
+  const reset = createTokenWithExpiry(PASSWORD_RESET_EXPIRES_HOURS);
+  db.query(
+    "INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)"
+  ).run(crypto.randomUUID(), user.id, reset.tokenHash, reset.expiresAt);
+
+  const resetLink = `${APP_BASE_URL}/reset/confirm?token=${reset.token}`;
+  sendEmail(
+    email,
+    "Reset your Salon Daybook password",
+    `Click to reset your password: ${resetLink}`
+  );
+
+  return jsonOk(c, { ok: true });
+});
+
+app.post("/api/auth/password-reset/confirm", async c => {
+  const body = await c.req.json().catch(() => null);
+  const token = typeof body?.token === "string" ? body.token : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+
+  if (!token || !password) {
+    return jsonError(c, "Token and password are required.", 400, "AUTH_REQUIRED_FIELDS");
+  }
+
+  if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
+    return jsonError(c, "Password too long.", 400, "AUTH_PASSWORD_TOO_LONG");
+  }
+
+  const tokenHash = hashToken(token);
+  const row = db
+    .query(
+      `SELECT user_id, expires_at, used_at
+       FROM password_reset_tokens
+       WHERE token_hash = ?
+       LIMIT 1`
+    )
+    .get(tokenHash) as { user_id: string; expires_at: number; used_at: string | null } | null;
+
+  if (!row || row.used_at || row.expires_at <= Math.floor(Date.now() / 1000)) {
+    return jsonError(c, "Invalid or expired token.", 400, "AUTH_TOKEN_INVALID");
+  }
+
+  const passwordHash = bcrypt.hashSync(password, 10);
+  db.query("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, row.user_id);
+  db.query(
+    "UPDATE password_reset_tokens SET used_at = datetime('now') WHERE token_hash = ?"
+  ).run(tokenHash);
+  db.query("DELETE FROM sessions WHERE user_id = ?").run(row.user_id);
+
+  return jsonOk(c, { ok: true });
 });
 
 app.post("/api/auth/logout", c => {
@@ -182,6 +395,8 @@ app.use("/api/services", requireAuth);
 app.use("/api/services/*", requireAuth);
 app.use("/api/appointments", requireAuth);
 app.use("/api/appointments/*", requireAuth);
+app.use("/api/exports", requireAuth);
+app.use("/api/exports/*", requireAuth);
 
 app.get("/api/clients", c => {
   const user = c.get("user");
@@ -451,10 +666,10 @@ app.get("/api/appointments", c => {
   const toParam = c.req.query("to");
 
   if (!fromParam || !toParam) {
-    return jsonError(c, "from and to query parameters are required.");
+    return jsonError(c, "from and to query parameters are required.", 400, "APPOINTMENT_RANGE_REQUIRED");
   }
   if (!isValidIsoDate(fromParam) || !isValidIsoDate(toParam)) {
-    return jsonError(c, "from and to must be valid ISO timestamps.");
+    return jsonError(c, "from and to must be valid ISO timestamps.", 400, "APPOINTMENT_RANGE_INVALID");
   }
 
   const from = new Date(fromParam).toISOString();
@@ -722,9 +937,84 @@ app.delete("/api/appointments/:id", c => {
   return jsonOk(c, { ok: true });
 });
 
-Bun.serve({
-  port,
-  fetch: app.fetch,
+app.get("/api/exports/clients", c => {
+  const user = c.get("user");
+  const rows = db
+    .query(
+      `SELECT id, first_name, last_name, email, phone, notes, created_at
+       FROM clients
+       WHERE user_id = ?
+       ORDER BY first_name ASC, last_name ASC`
+    )
+    .all(user.id) as Record<string, unknown>[];
+
+  const headers = [
+    "id",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "notes",
+    "created_at",
+  ];
+  const csv = toCsv(rows, headers);
+  const filename = `clients-${new Date().toISOString().slice(0, 10)}.csv`;
+  return c.text(csv, 200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+  });
 });
 
-console.log(`API running on http://localhost:${port}`);
+app.get("/api/exports/appointments", c => {
+  const user = c.get("user");
+  const rows = db
+    .query(
+      `SELECT
+         a.id,
+         a.start_time,
+         a.end_time,
+         a.status,
+         a.notes,
+         a.created_at,
+         c.first_name as client_first_name,
+         c.last_name as client_last_name,
+         s.name as service_name,
+         s.duration_minutes as service_duration_minutes,
+         s.price_cents as service_price_cents
+       FROM appointments a
+       JOIN clients c ON a.client_id = c.id AND c.user_id = a.user_id
+       JOIN services s ON a.service_id = s.id AND s.user_id = a.user_id
+       WHERE a.user_id = ?
+       ORDER BY a.start_time ASC`
+    )
+    .all(user.id) as Record<string, unknown>[];
+
+  const headers = [
+    "id",
+    "start_time",
+    "end_time",
+    "status",
+    "notes",
+    "created_at",
+    "client_first_name",
+    "client_last_name",
+    "service_name",
+    "service_duration_minutes",
+    "service_price_cents",
+  ];
+  const csv = toCsv(rows, headers);
+  const filename = `appointments-${new Date().toISOString().slice(0, 10)}.csv`;
+  return c.text(csv, 200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+  });
+});
+
+if (process.env.NODE_ENV !== "test") {
+  Bun.serve({
+    port,
+    fetch: app.fetch,
+  });
+
+  console.log(`API running on http://localhost:${port}`);
+}

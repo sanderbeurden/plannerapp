@@ -13,22 +13,30 @@ function hashSessionToken(token: string): string {
   return new Bun.CryptoHasher("sha256").update(token).digest("hex");
 }
 
+export function hashToken(token: string): string {
+  return new Bun.CryptoHasher("sha256").update(token).digest("hex");
+}
+
 export function cleanupExpiredSessions() {
   db.query("DELETE FROM sessions WHERE expires_at <= strftime('%s','now')").run();
 }
 
 function findUserBySessionToken(token: string) {
   const tokenHash = hashSessionToken(token);
-  return db
+  const row = db
     .query(
-      `SELECT users.id, users.name, users.email
+      `SELECT users.id, users.name, users.email, users.email_verified_at
        FROM sessions
        JOIN users ON sessions.user_id = users.id
        WHERE sessions.token = ?
          AND sessions.expires_at > strftime('%s','now')
        LIMIT 1`
     )
-    .get(tokenHash) as AuthUser | null;
+    .get(tokenHash) as (AuthUser & { email_verified_at?: string | null }) | null;
+
+  if (!row) return null;
+  if (!row.email_verified_at) return null;
+  return { id: row.id, name: row.name, email: row.email };
 }
 
 export function createSession(userId: string) {

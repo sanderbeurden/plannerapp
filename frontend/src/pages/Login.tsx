@@ -11,6 +11,9 @@ type Status = "idle" | "loading" | "error";
 export function Login() {
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
+  const [lastEmail, setLastEmail] = useState("");
+  const [errorCode, setErrorCode] = useState<string | undefined>();
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn } = useAuth();
@@ -25,14 +28,20 @@ export function Login() {
     const formData = new FormData(form);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
+    setLastEmail(email);
+    setResendMessage("");
+    setErrorCode(undefined);
 
     const result = await signIn(email, password);
     if (!result.ok) {
       setStatus("error");
+      setErrorCode(result.errorCode);
       const errorKey =
         result.errorCode === "RATE_LIMIT"
           ? "auth.rateLimited"
-          : "auth.invalidCredentials";
+          : result.errorCode === "AUTH_EMAIL_NOT_VERIFIED"
+            ? "auth.emailNotVerified"
+            : "auth.invalidCredentials";
       setMessage(t(errorKey));
       return;
     }
@@ -43,6 +52,26 @@ export function Login() {
       (location.state as { from?: { pathname?: string } })?.from?.pathname ??
       "/app";
     navigate(from, { replace: true });
+  }
+
+  async function handleResendVerification() {
+    if (!lastEmail) return;
+    setResendMessage("");
+    try {
+      const response = await fetch("/api/auth/verify/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: lastEmail }),
+      });
+      if (!response.ok) {
+        setResendMessage(t("auth.rateLimited"));
+        return;
+      }
+      setResendMessage(t("auth.verificationResent"));
+    } catch {
+      setResendMessage(t("auth.signUpError"));
+    }
   }
 
   return (
@@ -114,10 +143,32 @@ export function Login() {
             </p>
           ) : null}
 
+          {status === "error" && errorCode === "AUTH_EMAIL_NOT_VERIFIED" ? (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                className="text-sm font-medium text-foreground underline"
+              >
+                {t("auth.resendVerification")}
+              </button>
+              {resendMessage && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {resendMessage}
+                </p>
+              )}
+            </div>
+          ) : null}
+
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {t("auth.noAccount")}{" "}
             <Link to="/signup" className="font-semibold text-foreground">
               {t("auth.signUp")}
+            </Link>
+          </p>
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            <Link to="/reset" className="font-semibold text-foreground">
+              {t("auth.passwordReset")}
             </Link>
           </p>
         </div>

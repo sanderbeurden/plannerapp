@@ -37,6 +37,10 @@ Environment variables:
 - API runs on port 3001 and expects the web app on 5173.
 - Update CORS via `CORS_ORIGIN` env var if needed.
 
+## Backups & Export
+- CSV exports: visit Settings → Data export (or call `GET /api/exports/clients` and `GET /api/exports/appointments`).
+- Full backup: copy the SQLite database file (default `api/data/app.db` or the path set in `DB_PATH`).
+
 ## Fly.io notes (SQLite + volume)
 - `api/fly.toml` expects a volume named `plannerapp_data` mounted at `/data`.
 - Create the volume: `fly volumes create plannerapp_data --region ams --size 1`

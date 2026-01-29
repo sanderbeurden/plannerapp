@@ -8,9 +8,12 @@ import { Clients } from "@/pages/Clients";
 import { Dashboard } from "@/pages/Dashboard";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
+import { ResetPassword } from "@/pages/ResetPassword";
+import { ResetPasswordRequest } from "@/pages/ResetPasswordRequest";
 import { Services } from "@/pages/Services";
 import { Settings } from "@/pages/Settings";
 import { Signup } from "@/pages/Signup";
+import { VerifyEmail } from "@/pages/VerifyEmail";
 
 export function App() {
   return (
@@ -22,6 +25,9 @@ export function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify" element={<VerifyEmail />} />
+              <Route path="/reset" element={<ResetPasswordRequest />} />
+              <Route path="/reset/confirm" element={<ResetPassword />} />
               <Route element={<RequireAuth />}>
                 <Route path="/app" element={<Dashboard />} />
                 <Route path="/app/services" element={<Services />} />

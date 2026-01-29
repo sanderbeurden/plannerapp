@@ -24,7 +24,7 @@ type AuthContextValue = {
     name: string,
     email: string,
     password: string
-  ) => Promise<{ ok: boolean; errorCode?: string }>;
+  ) => Promise<{ ok: boolean; errorCode?: string; verificationRequired?: boolean }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -124,19 +124,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, errorCode };
         }
 
-        let data: { user?: AuthUser };
+        let data: { user?: AuthUser; verificationRequired?: boolean };
         try {
           data = await response.json();
         } catch {
           return { ok: false };
         }
 
-        if (!data.user) {
-          return { ok: false };
-        }
-
-        setUser(data.user);
-        return { ok: true };
+        return { ok: true, verificationRequired: data.verificationRequired };
       } catch {
         return { ok: false };
       } finally {
