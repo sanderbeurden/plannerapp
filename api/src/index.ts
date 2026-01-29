@@ -12,6 +12,7 @@ import {
 } from "./auth";
 import { db } from "./db/client";
 import { jsonCreated, jsonError, jsonOk } from "./http";
+import { getClientIp, isRateLimited, logAuthFailure } from "./security";
 import {
   mapAppointment,
   mapClient,
@@ -31,14 +32,20 @@ const app = new Hono<AppBindings>();
 app.use(logger());
 
 const port = Number(process.env.PORT ?? 3001);
-const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
+const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const PASSWORD_MAX_BYTES = 72;
 
 app.use(
   "/api/*",
   cors({
-    origin: corsOrigin,
+    origin: (origin) => {
+      if (!origin) return corsOrigins[0] ?? "";
+      return corsOrigins.includes(origin) ? origin : undefined;
+    },
     credentials: true,
   })
 );
@@ -51,6 +58,16 @@ app.post("/api/auth/login", async c => {
   const body = await c.req.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  const ip = getClientIp(c);
+  const emailKey = email.trim().toLowerCase();
+
+  if (
+    isRateLimited(`auth:login:ip:${ip}`, { windowMs: 10 * 60 * 1000, max: 30 }) ||
+    (emailKey &&
+      isRateLimited(`auth:login:${ip}:${emailKey}`, { windowMs: 10 * 60 * 1000, max: 8 }))
+  ) {
+    return jsonError(c, "Too many requests. Please try again later.", 429, "RATE_LIMIT");
+  }
 
   if (!email || !password) {
     return c.json({ error: "Email and password required." }, 400);
@@ -69,11 +86,13 @@ app.post("/api/auth/login", async c => {
     | null;
 
   if (!user) {
+    logAuthFailure({ email: emailKey, ip, reason: "invalid_credentials" });
     return c.json({ error: "Invalid credentials." }, 401);
   }
 
   const passwordMatches = bcrypt.compareSync(password, user.password_hash);
   if (!passwordMatches) {
+    logAuthFailure({ userId: user.id, email: emailKey, ip, reason: "invalid_credentials" });
     return c.json({ error: "Invalid credentials." }, 401);
   }
 
@@ -94,6 +113,16 @@ app.post("/api/auth/signup", async c => {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  const ip = getClientIp(c);
+  const emailKey = email.toLowerCase();
+
+  if (
+    isRateLimited(`auth:signup:ip:${ip}`, { windowMs: 10 * 60 * 1000, max: 20 }) ||
+    (emailKey &&
+      isRateLimited(`auth:signup:${ip}:${emailKey}`, { windowMs: 10 * 60 * 1000, max: 5 }))
+  ) {
+    return jsonError(c, "Too many requests. Please try again later.", 429, "RATE_LIMIT");
+  }
 
   if (!name || !email || !password) {
     return c.json({ error: "Name, email, and password required." }, 400);
@@ -111,6 +140,7 @@ app.post("/api/auth/signup", async c => {
       "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)"
     ).run(userId, name, email, passwordHash);
   } catch (err) {
+    logAuthFailure({ email: emailKey, ip, reason: "email_exists" });
     return jsonError(c, "Email already exists.", 409, "AUTH_EMAIL_EXISTS");
   }
 

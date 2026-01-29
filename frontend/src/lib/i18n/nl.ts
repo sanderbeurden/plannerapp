@@ -32,6 +32,7 @@ export const nl: TranslationKeys = {
     getStarted: "Begin met je gratis account",
     invalidCredentials: "Ongeldige e-mail of wachtwoord",
     signUpError: "Account aanmaken mislukt. Probeer het opnieuw.",
+    emailExists: "Er bestaat al een account met dit e-mailadres.",
   },
   calendar: {
     today: "Vandaag",
