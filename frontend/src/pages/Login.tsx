@@ -168,7 +168,7 @@ export function Login() {
           </p>
           <p className="mt-3 text-center text-sm text-muted-foreground">
             <Link to="/reset" className="font-semibold text-foreground">
-              {t("auth.passwordReset")}
+              {t("auth.forgotPassword")}
             </Link>
           </p>
         </div>

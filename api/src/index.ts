@@ -397,6 +397,8 @@ app.use("/api/appointments", requireAuth);
 app.use("/api/appointments/*", requireAuth);
 app.use("/api/exports", requireAuth);
 app.use("/api/exports/*", requireAuth);
+app.use("/api/account", requireAuth);
+app.use("/api/account/*", requireAuth);
 
 app.get("/api/clients", c => {
   const user = c.get("user");
@@ -1008,6 +1010,40 @@ app.get("/api/exports/appointments", c => {
     "Content-Type": "text/csv; charset=utf-8",
     "Content-Disposition": `attachment; filename="${filename}"`,
   });
+});
+
+app.post("/api/account/delete", async c => {
+  const user = c.get("user");
+  const body = await c.req.json().catch(() => null);
+  const password = typeof body?.password === "string" ? body.password : "";
+  const ip = getClientIp(c);
+
+  if (
+    isRateLimited(`auth:delete:ip:${ip}`, { windowMs: 10 * 60 * 1000, max: 10 }) ||
+    isRateLimited(`auth:delete:user:${user.id}`, { windowMs: 10 * 60 * 1000, max: 5 })
+  ) {
+    return jsonError(c, "Too many requests. Please try again later.", 429, "RATE_LIMIT");
+  }
+
+  if (!password) {
+    return jsonError(c, "Password is required.", 400, "AUTH_REQUIRED_FIELDS");
+  }
+
+  if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
+    return jsonError(c, "Password too long.", 400, "AUTH_PASSWORD_TOO_LONG");
+  }
+
+  const existing = db
+    .query("SELECT password_hash FROM users WHERE id = ? LIMIT 1")
+    .get(user.id) as { password_hash: string } | null;
+
+  if (!existing || !bcrypt.compareSync(password, existing.password_hash)) {
+    return jsonError(c, "Invalid credentials.", 401, "AUTH_INVALID_CREDENTIALS");
+  }
+
+  db.query("DELETE FROM users WHERE id = ?").run(user.id);
+  clearSessionCookie(c);
+  return jsonOk(c, { ok: true });
 });
 
 if (process.env.NODE_ENV !== "test") {

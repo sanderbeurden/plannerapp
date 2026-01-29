@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings, type Language } from "@/lib/settings";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 const START_HOUR_OPTIONS = [6, 7, 8, 9, 10, 11, 12];
 const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
@@ -11,7 +12,12 @@ const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
 export function Settings() {
   const { settings, updateSettings } = useSettings();
   const { t } = useTranslation();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [exportMessage, setExportMessage] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const handleExport = async (endpoint: string, filename: string) => {
     setExportMessage("");
@@ -32,6 +38,49 @@ export function Settings() {
       window.URL.revokeObjectURL(url);
     } catch {
       setExportMessage(t("settings.exportFailed"));
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteMessage("");
+    if (!deletePassword.trim()) {
+      setDeleteMessage(t("settings.deletePasswordRequired"));
+      return;
+    }
+
+    const confirmed = window.confirm(t("settings.deleteConfirm"));
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { code?: string };
+        const errorKey =
+          data.code === "AUTH_INVALID_CREDENTIALS"
+            ? "settings.deletePasswordInvalid"
+            : data.code === "AUTH_PASSWORD_TOO_LONG"
+              ? "auth.passwordTooLong"
+              : data.code === "RATE_LIMIT"
+                ? "auth.rateLimited"
+                : "settings.deleteFailed";
+        setDeleteMessage(t(errorKey));
+        setDeleting(false);
+        return;
+      }
+
+      await signOut();
+      navigate("/", { replace: true });
+    } catch {
+      setDeleteMessage(t("settings.deleteFailed"));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -142,9 +191,43 @@ export function Settings() {
                 {t("settings.exportAppointments")}
               </Button>
             </div>
-            {exportMessage && (
-              <p className="text-sm text-red-600">{exportMessage}</p>
-            )}
+          {exportMessage && (
+            <p className="text-sm text-red-600">{exportMessage}</p>
+          )}
+          </div>
+
+          {/* Delete Account */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div>
+              <h2 className="text-sm font-medium text-red-700">{t("settings.deleteAccountTitle")}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("settings.deleteAccountHelp")}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">
+                {t("auth.password")}
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                placeholder="••••••••"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? `${t("common.delete")}...` : t("settings.deleteAccount")}
+              </Button>
+              {deleteMessage && (
+                <p className="text-sm text-red-600">{deleteMessage}</p>
+              )}
+            </div>
           </div>
 
         </div>
