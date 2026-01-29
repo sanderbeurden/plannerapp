@@ -16,8 +16,15 @@ type AuthUser = {
 type AuthContextValue = {
   user: AuthUser | null;
   status: "idle" | "loading";
-  signIn: (email: string, password: string) => Promise<{ ok: boolean }>;
-  signUp: (name: string, email: string, password: string) => Promise<{ ok: boolean; errorCode?: string }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; errorCode?: string }>;
+  signUp: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; errorCode?: string }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -64,7 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        return { ok: false };
+        let errorCode: string | undefined;
+        try {
+          const errorData = (await response.json()) as { code?: string };
+          errorCode = errorData.code;
+        } catch {
+          // Ignore JSON parse errors
+        }
+        return { ok: false, errorCode };
       }
 
       let data: { user?: AuthUser };

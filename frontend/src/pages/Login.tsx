@@ -29,7 +29,11 @@ export function Login() {
     const result = await signIn(email, password);
     if (!result.ok) {
       setStatus("error");
-      setMessage(t("auth.invalidCredentials"));
+      const errorKey =
+        result.errorCode === "RATE_LIMIT"
+          ? "auth.rateLimited"
+          : "auth.invalidCredentials";
+      setMessage(t(errorKey));
       return;
     }
 

@@ -30,6 +30,7 @@ export const en = {
     getStarted: "Get started with your free account",
     invalidCredentials: "Invalid email or password",
     signUpError: "Could not create account. Please try again.",
+    rateLimited: "Too many attempts. Try again in 10 minutes.",
     emailExists: "An account with this email already exists.",
   },
   calendar: {

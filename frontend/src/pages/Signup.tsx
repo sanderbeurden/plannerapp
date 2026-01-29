@@ -30,11 +30,13 @@ export function Signup() {
       const result = await signUp(name, email, password);
       if (!result.ok) {
         setStatus("error");
-        setMessage(
-          result.errorCode === "AUTH_EMAIL_EXISTS"
-            ? t("auth.emailExists")
-            : t("auth.signUpError")
-        );
+        const errorKey =
+          result.errorCode === "RATE_LIMIT"
+            ? "auth.rateLimited"
+            : result.errorCode === "AUTH_EMAIL_EXISTS"
+              ? "auth.emailExists"
+              : "auth.signUpError";
+        setMessage(t(errorKey));
         return;
       }
 
