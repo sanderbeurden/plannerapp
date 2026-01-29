@@ -106,34 +106,20 @@ app.post("/api/auth/signup", async c => {
   const passwordHash = bcrypt.hashSync(password, 10);
   const userId = crypto.randomUUID();
 
-  const createOwner = db.transaction(() => {
-    const existingCount = db
-      .query("SELECT COUNT(*) as count FROM users")
-      .get() as { count: number };
-
-    if (existingCount.count > 0) {
-      return null;
-    }
-
+  try {
     db.query(
       "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)"
     ).run(userId, name, email, passwordHash);
-
-    return userId;
-  });
-
-  const createdUserId = createOwner.immediate();
-
-  if (!createdUserId) {
-    return c.json({ error: "Signup disabled for this workspace." }, 409);
+  } catch (err) {
+    return jsonError(c, "Email already exists.", 409, "AUTH_EMAIL_EXISTS");
   }
 
-  const token = createSession(createdUserId);
+  const token = createSession(userId);
   setSessionCookie(c, token);
 
   return c.json({
     user: {
-      id: createdUserId,
+      id: userId,
       name,
       email,
     },
@@ -168,6 +154,7 @@ app.use("/api/appointments", requireAuth);
 app.use("/api/appointments/*", requireAuth);
 
 app.get("/api/clients", c => {
+  const user = c.get("user");
   const q = c.req.query("q")?.trim();
   let rows: unknown[];
 
@@ -181,17 +168,20 @@ app.get("/api/clients", c => {
     rows = db
       .query(
         `SELECT * FROM clients
-         WHERE first_name LIKE ? ESCAPE '\\'
-            OR last_name LIKE ? ESCAPE '\\'
-            OR (first_name || ' ' || last_name) LIKE ? ESCAPE '\\'
-            OR email LIKE ? ESCAPE '\\'
+         WHERE user_id = ?
+           AND (first_name LIKE ? ESCAPE '\\'
+             OR last_name LIKE ? ESCAPE '\\'
+             OR (first_name || ' ' || last_name) LIKE ? ESCAPE '\\'
+             OR email LIKE ? ESCAPE '\\')
          ORDER BY first_name ASC, last_name ASC`
       )
-      .all(like, like, like, like);
+      .all(user.id, like, like, like, like);
   } else {
     rows = db
-      .query("SELECT * FROM clients ORDER BY first_name ASC, last_name ASC")
-      .all();
+      .query(
+        "SELECT * FROM clients WHERE user_id = ? ORDER BY first_name ASC, last_name ASC"
+      )
+      .all(user.id);
   }
 
   const clients = (rows as Parameters<typeof mapClient>[0][]).map(mapClient);
@@ -199,11 +189,12 @@ app.get("/api/clients", c => {
 });
 
 app.post("/api/clients", async c => {
+  const user = c.get("user");
   const body = await c.req.json().catch(() => null);
   const firstName = getRequiredString(body?.firstName);
   const lastName = getRequiredString(body?.lastName);
   if (!firstName || !lastName) {
-    return jsonError(c, "Client firstName and lastName are required.");
+    return jsonError(c, "Client firstName and lastName are required.", 400, "CLIENT_NAME_REQUIRED");
   }
 
   const email = getOptionalString(body?.email);
@@ -212,18 +203,19 @@ app.post("/api/clients", async c => {
 
   const existing = db
     .query(
-      "SELECT id FROM clients WHERE first_name = ? AND last_name = ? LIMIT 1"
+      "SELECT id FROM clients WHERE user_id = ? AND first_name = ? AND last_name = ? LIMIT 1"
     )
-    .get(firstName, lastName);
+    .get(user.id, firstName, lastName);
   if (existing) {
-    return jsonError(c, "Client with this name already exists.", 409);
+    return jsonError(c, "Client with this name already exists.", 409, "CLIENT_DUPLICATE");
   }
 
   const id = crypto.randomUUID();
   db.query(
-    "INSERT INTO clients (id, name, first_name, last_name, email, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO clients (id, user_id, name, first_name, last_name, email, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   ).run(
     id,
+    user.id,
     `${firstName} ${lastName}`.trim(),
     firstName,
     lastName,
@@ -233,18 +225,19 @@ app.post("/api/clients", async c => {
   );
 
   const row = db
-    .query("SELECT * FROM clients WHERE id = ?")
-    .get(id) as Parameters<typeof mapClient>[0];
+    .query("SELECT * FROM clients WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapClient>[0];
   return jsonCreated(c, mapClient(row));
 });
 
 app.put("/api/clients/:id", async c => {
+  const user = c.get("user");
   const id = c.req.param("id");
   const existing = db
-    .query("SELECT * FROM clients WHERE id = ?")
-    .get(id) as Parameters<typeof mapClient>[0] | null;
+    .query("SELECT * FROM clients WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapClient>[0] | null;
   if (!existing) {
-    return jsonError(c, "Client not found.", 404);
+    return jsonError(c, "Client not found.", 404, "CLIENT_NOT_FOUND");
   }
 
   const body = await c.req.json().catch(() => null);
@@ -260,7 +253,7 @@ app.put("/api/clients/:id", async c => {
     lastNameInput === undefined ? existing.last_name : lastNameInput;
 
   if (!firstName || !lastName) {
-    return jsonError(c, "Client firstName and lastName are required.");
+    return jsonError(c, "Client firstName and lastName are required.", 400, "CLIENT_NAME_REQUIRED");
   }
 
   const email = emailInput === undefined ? existing.email : emailInput;
@@ -269,15 +262,15 @@ app.put("/api/clients/:id", async c => {
 
   const duplicate = db
     .query(
-      "SELECT id FROM clients WHERE id != ? AND first_name = ? AND last_name = ? LIMIT 1"
+      "SELECT id FROM clients WHERE id != ? AND user_id = ? AND first_name = ? AND last_name = ? LIMIT 1"
     )
-    .get(id, firstName, lastName);
+    .get(id, user.id, firstName, lastName);
   if (duplicate) {
-    return jsonError(c, "Client with this name already exists.", 409);
+    return jsonError(c, "Client with this name already exists.", 409, "CLIENT_DUPLICATE");
   }
 
   db.query(
-    "UPDATE clients SET name = ?, first_name = ?, last_name = ?, email = ?, phone = ?, notes = ? WHERE id = ?"
+    "UPDATE clients SET name = ?, first_name = ?, last_name = ?, email = ?, phone = ?, notes = ? WHERE id = ? AND user_id = ?"
   ).run(
     `${firstName} ${lastName}`.trim(),
     firstName,
@@ -285,73 +278,92 @@ app.put("/api/clients/:id", async c => {
     email,
     phone,
     notes,
-    id
+    id,
+    user.id
   );
 
   const row = db
-    .query("SELECT * FROM clients WHERE id = ?")
-    .get(id) as Parameters<typeof mapClient>[0];
+    .query("SELECT * FROM clients WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapClient>[0];
   return jsonOk(c, mapClient(row));
 });
 
 app.delete("/api/clients/:id", c => {
+  const user = c.get("user");
   const id = c.req.param("id");
 
   // Check if client has appointments
   const hasAppointments = db
-    .query("SELECT id FROM appointments WHERE client_id = ? LIMIT 1")
-    .get(id);
+    .query("SELECT id FROM appointments WHERE client_id = ? AND user_id = ? LIMIT 1")
+    .get(id, user.id);
   if (hasAppointments) {
-    return jsonError(c, "Cannot delete client with existing appointments.", 409);
+    return jsonError(
+      c,
+      "Cannot delete client with existing appointments.",
+      409,
+      "CLIENT_HAS_APPOINTMENTS"
+    );
   }
 
-  const result = db.query("DELETE FROM clients WHERE id = ?").run(id);
+  const result = db
+    .query("DELETE FROM clients WHERE id = ? AND user_id = ?")
+    .run(id, user.id);
   if (result.changes === 0) {
-    return jsonError(c, "Client not found.", 404);
+    return jsonError(c, "Client not found.", 404, "CLIENT_NOT_FOUND");
   }
   return jsonOk(c, { ok: true });
 });
 
 app.get("/api/services", c => {
-  const rows = db.query("SELECT * FROM services ORDER BY name ASC").all();
+  const user = c.get("user");
+  const rows = db
+    .query("SELECT * FROM services WHERE user_id = ? ORDER BY name ASC")
+    .all(user.id);
   const services = (rows as Parameters<typeof mapService>[0][]).map(mapService);
   return jsonOk(c, services);
 });
 
 app.post("/api/services", async c => {
+  const user = c.get("user");
   const body = await c.req.json().catch(() => null);
   const name = getRequiredString(body?.name);
   const durationMinutes = getRequiredInt(body?.durationMinutes);
   const priceCents = getOptionalInt(body?.priceCents);
 
   if (!name) {
-    return jsonError(c, "Service name is required.");
+    return jsonError(c, "Service name is required.", 400, "SERVICE_NAME_REQUIRED");
   }
   if (!durationMinutes || durationMinutes <= 0) {
-    return jsonError(c, "Service duration must be a positive integer.");
+    return jsonError(
+      c,
+      "Service duration must be a positive integer.",
+      400,
+      "SERVICE_DURATION_INVALID"
+    );
   }
   if (priceCents !== undefined && priceCents !== null && priceCents < 0) {
-    return jsonError(c, "Price cannot be negative.");
+    return jsonError(c, "Price cannot be negative.", 400, "SERVICE_PRICE_INVALID");
   }
 
   const id = crypto.randomUUID();
   db.query(
-    "INSERT INTO services (id, name, duration_minutes, price_cents) VALUES (?, ?, ?, ?)"
-  ).run(id, name, durationMinutes, priceCents ?? null);
+    "INSERT INTO services (id, user_id, name, duration_minutes, price_cents) VALUES (?, ?, ?, ?, ?)"
+  ).run(id, user.id, name, durationMinutes, priceCents ?? null);
 
   const row = db
-    .query("SELECT * FROM services WHERE id = ?")
-    .get(id) as Parameters<typeof mapService>[0];
+    .query("SELECT * FROM services WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapService>[0];
   return jsonCreated(c, mapService(row));
 });
 
 app.put("/api/services/:id", async c => {
+  const user = c.get("user");
   const id = c.req.param("id");
   const existing = db
-    .query("SELECT * FROM services WHERE id = ?")
-    .get(id) as Parameters<typeof mapService>[0] | null;
+    .query("SELECT * FROM services WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapService>[0] | null;
   if (!existing) {
-    return jsonError(c, "Service not found.", 404);
+    return jsonError(c, "Service not found.", 404, "SERVICE_NOT_FOUND");
   }
 
   const body = await c.req.json().catch(() => null);
@@ -361,41 +373,50 @@ app.put("/api/services/:id", async c => {
 
   const name = nameInput === undefined ? existing.name : nameInput;
   if (!name) {
-    return jsonError(c, "Service name is required.");
+    return jsonError(c, "Service name is required.", 400, "SERVICE_NAME_REQUIRED");
   }
 
   const durationMinutes =
     durationInput === undefined ? existing.duration_minutes : durationInput;
   if (!durationMinutes || durationMinutes <= 0) {
-    return jsonError(c, "Service duration must be a positive integer.");
+    return jsonError(
+      c,
+      "Service duration must be a positive integer.",
+      400,
+      "SERVICE_DURATION_INVALID"
+    );
   }
 
   const priceCents =
     priceInput === undefined ? existing.price_cents : priceInput;
   if (priceCents !== null && priceCents !== undefined && priceCents < 0) {
-    return jsonError(c, "Price cannot be negative.");
+    return jsonError(c, "Price cannot be negative.", 400, "SERVICE_PRICE_INVALID");
   }
 
   db.query(
-    "UPDATE services SET name = ?, duration_minutes = ?, price_cents = ? WHERE id = ?"
-  ).run(name, durationMinutes, priceCents, id);
+    "UPDATE services SET name = ?, duration_minutes = ?, price_cents = ? WHERE id = ? AND user_id = ?"
+  ).run(name, durationMinutes, priceCents, id, user.id);
 
   const row = db
-    .query("SELECT * FROM services WHERE id = ?")
-    .get(id) as Parameters<typeof mapService>[0];
+    .query("SELECT * FROM services WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapService>[0];
   return jsonOk(c, mapService(row));
 });
 
 app.delete("/api/services/:id", c => {
+  const user = c.get("user");
   const id = c.req.param("id");
-  const result = db.query("DELETE FROM services WHERE id = ?").run(id);
+  const result = db
+    .query("DELETE FROM services WHERE id = ? AND user_id = ?")
+    .run(id, user.id);
   if (result.changes === 0) {
-    return jsonError(c, "Service not found.", 404);
+    return jsonError(c, "Service not found.", 404, "SERVICE_NOT_FOUND");
   }
   return jsonOk(c, { ok: true });
 });
 
 app.get("/api/appointments", c => {
+  const user = c.get("user");
   const fromParam = c.req.query("from");
   const toParam = c.req.query("to");
 
@@ -427,18 +448,19 @@ app.get("/api/appointments", c => {
         c.phone as client_phone,
         c.notes as client_notes,
         c.created_at as client_created_at,
-        s.id as service_id_join,
-        s.name as service_name,
-        s.duration_minutes as service_duration_minutes,
-        s.price_cents as service_price_cents,
-        s.created_at as service_created_at
+       s.id as service_id_join,
+       s.name as service_name,
+       s.duration_minutes as service_duration_minutes,
+       s.price_cents as service_price_cents,
+       s.created_at as service_created_at
        FROM appointments a
-       JOIN clients c ON a.client_id = c.id
-       JOIN services s ON a.service_id = s.id
-       WHERE a.start_time < ? AND a.end_time > ?
+       JOIN clients c ON a.client_id = c.id AND c.user_id = a.user_id
+       JOIN services s ON a.service_id = s.id AND s.user_id = a.user_id
+       WHERE a.user_id = ?
+         AND a.start_time < ? AND a.end_time > ?
        ORDER BY a.start_time ASC`
     )
-    .all(to, from) as Array<{
+    .all(user.id, to, from) as Array<{
       id: string;
       client_id: string;
       service_id: string;
@@ -491,6 +513,7 @@ app.get("/api/appointments", c => {
 });
 
 app.post("/api/appointments", async c => {
+  const user = c.get("user");
   const body = await c.req.json().catch(() => null);
   const clientId = getRequiredString(body?.clientId);
   const serviceId = getRequiredString(body?.serviceId);
@@ -501,63 +524,79 @@ app.post("/api/appointments", async c => {
   const status = (statusInput ?? "confirmed") as AppointmentStatus;
 
   if (!clientId || !serviceId || !startUtc || !endUtc) {
-    return jsonError(c, "clientId, serviceId, startUtc, and endUtc are required.");
+    return jsonError(
+      c,
+      "clientId, serviceId, startUtc, and endUtc are required.",
+      400,
+      "APPOINTMENT_REQUIRED_FIELDS"
+    );
   }
   if (!isValidIsoDate(startUtc) || !isValidIsoDate(endUtc)) {
-    return jsonError(c, "startUtc and endUtc must be valid ISO timestamps.");
+    return jsonError(
+      c,
+      "startUtc and endUtc must be valid ISO timestamps.",
+      400,
+      "APPOINTMENT_INVALID_TIME"
+    );
   }
 
   const startIso = new Date(startUtc).toISOString();
   const endIso = new Date(endUtc).toISOString();
   if (startIso >= endIso) {
-    return jsonError(c, "End time must be after start time.");
+    return jsonError(
+      c,
+      "End time must be after start time.",
+      400,
+      "APPOINTMENT_END_BEFORE_START"
+    );
   }
 
   if (!["confirmed", "hold", "cancelled"].includes(status)) {
-    return jsonError(c, "Invalid status.");
+    return jsonError(c, "Invalid status.", 400, "APPOINTMENT_INVALID_STATUS");
   }
 
   const clientExists = db
-    .query("SELECT id FROM clients WHERE id = ?")
-    .get(clientId);
+    .query("SELECT id FROM clients WHERE id = ? AND user_id = ?")
+    .get(clientId, user.id);
   if (!clientExists) {
-    return jsonError(c, "Client not found.", 404);
+    return jsonError(c, "Client not found.", 404, "CLIENT_NOT_FOUND");
   }
 
   const serviceExists = db
-    .query("SELECT id FROM services WHERE id = ?")
-    .get(serviceId);
+    .query("SELECT id FROM services WHERE id = ? AND user_id = ?")
+    .get(serviceId, user.id);
   if (!serviceExists) {
-    return jsonError(c, "Service not found.", 404);
+    return jsonError(c, "Service not found.", 404, "SERVICE_NOT_FOUND");
   }
 
   const overlap = db
     .query(
-      "SELECT id FROM appointments WHERE start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
+      "SELECT id FROM appointments WHERE user_id = ? AND start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
     )
-    .get(endIso, startIso);
+    .get(user.id, endIso, startIso);
   if (overlap) {
-    return jsonError(c, "Appointment overlaps an existing booking.", 409);
+    return jsonError(c, "Appointment overlaps an existing booking.", 409, "APPOINTMENT_OVERLAP");
   }
 
   const id = crypto.randomUUID();
   db.query(
-    "INSERT INTO appointments (id, client_id, service_id, start_time, end_time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, clientId, serviceId, startIso, endIso, status, notes ?? null);
+    "INSERT INTO appointments (id, user_id, client_id, service_id, start_time, end_time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(id, user.id, clientId, serviceId, startIso, endIso, status, notes ?? null);
 
   const row = db
-    .query("SELECT * FROM appointments WHERE id = ?")
-    .get(id) as Parameters<typeof mapAppointment>[0];
+    .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapAppointment>[0];
   return jsonCreated(c, mapAppointment(row));
 });
 
 app.put("/api/appointments/:id", async c => {
+  const user = c.get("user");
   const id = c.req.param("id");
   const existing = db
-    .query("SELECT * FROM appointments WHERE id = ?")
-    .get(id) as Parameters<typeof mapAppointment>[0] | null;
+    .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapAppointment>[0] | null;
   if (!existing) {
-    return jsonError(c, "Appointment not found.", 404);
+    return jsonError(c, "Appointment not found.", 404, "APPOINTMENT_NOT_FOUND");
   }
 
   const body = await c.req.json().catch(() => null);
@@ -571,10 +610,10 @@ app.put("/api/appointments/:id", async c => {
   const statusInput = getOptionalString(body?.status);
 
   if (startUtcInput && !isValidIsoDate(startUtcInput)) {
-    return jsonError(c, "startUtc must be a valid ISO timestamp.");
+    return jsonError(c, "startUtc must be a valid ISO timestamp.", 400, "APPOINTMENT_INVALID_TIME");
   }
   if (endUtcInput && !isValidIsoDate(endUtcInput)) {
-    return jsonError(c, "endUtc must be a valid ISO timestamp.");
+    return jsonError(c, "endUtc must be a valid ISO timestamp.", 400, "APPOINTMENT_INVALID_TIME");
   }
 
   const startIso = startUtcInput
@@ -585,57 +624,70 @@ app.put("/api/appointments/:id", async c => {
     : existing.end_time;
 
   if (!isValidIsoDate(startIso) || !isValidIsoDate(endIso)) {
-    return jsonError(c, "startUtc and endUtc must be valid ISO timestamps.");
+    return jsonError(
+      c,
+      "startUtc and endUtc must be valid ISO timestamps.",
+      400,
+      "APPOINTMENT_INVALID_TIME"
+    );
   }
   if (startIso >= endIso) {
-    return jsonError(c, "End time must be after start time.");
+    return jsonError(
+      c,
+      "End time must be after start time.",
+      400,
+      "APPOINTMENT_END_BEFORE_START"
+    );
   }
 
   const status = (statusInput ?? existing.status) as AppointmentStatus;
   if (!["confirmed", "hold", "cancelled"].includes(status)) {
-    return jsonError(c, "Invalid status.");
+    return jsonError(c, "Invalid status.", 400, "APPOINTMENT_INVALID_STATUS");
   }
 
   const clientExists = db
-    .query("SELECT id FROM clients WHERE id = ?")
-    .get(clientId);
+    .query("SELECT id FROM clients WHERE id = ? AND user_id = ?")
+    .get(clientId, user.id);
   if (!clientExists) {
-    return jsonError(c, "Client not found.", 404);
+    return jsonError(c, "Client not found.", 404, "CLIENT_NOT_FOUND");
   }
 
   const serviceExists = db
-    .query("SELECT id FROM services WHERE id = ?")
-    .get(serviceId);
+    .query("SELECT id FROM services WHERE id = ? AND user_id = ?")
+    .get(serviceId, user.id);
   if (!serviceExists) {
-    return jsonError(c, "Service not found.", 404);
+    return jsonError(c, "Service not found.", 404, "SERVICE_NOT_FOUND");
   }
 
   const overlap = db
     .query(
-      "SELECT id FROM appointments WHERE id != ? AND start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
+      "SELECT id FROM appointments WHERE id != ? AND user_id = ? AND start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
     )
-    .get(id, endIso, startIso);
+    .get(id, user.id, endIso, startIso);
   if (overlap) {
-    return jsonError(c, "Appointment overlaps an existing booking.", 409);
+    return jsonError(c, "Appointment overlaps an existing booking.", 409, "APPOINTMENT_OVERLAP");
   }
 
   const notes = notesInput === undefined ? existing.notes : notesInput;
 
   db.query(
-    "UPDATE appointments SET client_id = ?, service_id = ?, start_time = ?, end_time = ?, status = ?, notes = ? WHERE id = ?"
-  ).run(clientId, serviceId, startIso, endIso, status, notes, id);
+    "UPDATE appointments SET client_id = ?, service_id = ?, start_time = ?, end_time = ?, status = ?, notes = ? WHERE id = ? AND user_id = ?"
+  ).run(clientId, serviceId, startIso, endIso, status, notes, id, user.id);
 
   const row = db
-    .query("SELECT * FROM appointments WHERE id = ?")
-    .get(id) as Parameters<typeof mapAppointment>[0];
+    .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapAppointment>[0];
   return jsonOk(c, mapAppointment(row));
 });
 
 app.delete("/api/appointments/:id", c => {
+  const user = c.get("user");
   const id = c.req.param("id");
-  const result = db.query("DELETE FROM appointments WHERE id = ?").run(id);
+  const result = db
+    .query("DELETE FROM appointments WHERE id = ? AND user_id = ?")
+    .run(id, user.id);
   if (result.changes === 0) {
-    return jsonError(c, "Appointment not found.", 404);
+    return jsonError(c, "Appointment not found.", 404, "APPOINTMENT_NOT_FOUND");
   }
   return jsonOk(c, { ok: true });
 });

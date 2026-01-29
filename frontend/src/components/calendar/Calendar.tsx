@@ -8,10 +8,11 @@ import { WeekView } from "./WeekView";
 import { MiniCalendar } from "./MiniCalendar";
 import { AppointmentModal } from "./AppointmentModal";
 import { AppointmentPopover } from "./AppointmentPopover";
-import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import type { AppointmentWithDetails, AppointmentStatus } from "@/types";
 
 export function Calendar() {
+  const { t } = useTranslation();
   const calendarState = useCalendarState();
   const { from, to } = calendarState.getDateRange();
   const {
@@ -104,7 +105,7 @@ export function Calendar() {
   const handleDeleteAppointment = useCallback(async () => {
     if (popoverAppointment) {
       const confirmed = window.confirm(
-        `Are you sure you want to delete this appointment for ${popoverAppointment.client.fullName}?`
+        t("appointment.deleteConfirmName", { name: popoverAppointment.client.fullName })
       );
       if (confirmed) {
         await deleteAppointment(popoverAppointment.id);
@@ -130,7 +131,7 @@ export function Calendar() {
               <div className="flex flex-col items-center gap-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <span className="text-sm text-muted-foreground">
-                  Loading appointments...
+                  {t("calendar.loadingAppointments")}
                 </span>
               </div>
             </div>

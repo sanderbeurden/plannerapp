@@ -8,6 +8,11 @@ export function jsonCreated<T>(c: Context, data: T) {
   return c.json({ data }, 201);
 }
 
-export function jsonError(c: Context, message: string, status = 400) {
-  return c.json({ error: message }, status);
+export function jsonError(
+  c: Context,
+  message: string,
+  status = 400,
+  code?: string
+) {
+  return c.json({ error: message, code }, status);
 }

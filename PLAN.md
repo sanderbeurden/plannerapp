@@ -69,3 +69,24 @@ Build a React SPA + Hono backend for a single salon owner (beautician/barber) to
 3) Appointments CRUD + conflict validation
 4) Calendar UI + appointment modal
 5) Minimal polish + deploy
+
+## Test Strategy
+### Tooling
+- Frontend: Vitest + React Testing Library + jsdom
+- Backend: bun:test (native to Bun) + supertest-style request helpers if needed
+
+### Test Scope
+- Unit: date/time utils, formatting (e.g., "8h"), overlap validation
+- Component: Day/Week view rendering, appointment block placement, empty states
+- API: request validation, CRUD happy paths, overlap rejection, UTC storage
+- E2E (later): create appointment, week -> day click scrolls to time
+
+### First Tests (High Value)
+1) Week time slot click navigates to day view and scrolls to selected time
+2) Appointment positioning uses correct height/offset per duration
+3) API rejects overlapping appointment times
+4) UTC timestamps stored and returned as ISO strings
+
+### Conventions
+- Use fixed dates in tests to avoid timezone flakiness
+- Keep tests fast and focused on user-visible behavior

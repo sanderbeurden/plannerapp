@@ -95,7 +95,11 @@ export function Clients() {
     if (result.success) {
       setDeleteConfirm(null);
     } else {
-      setError(result.error || "Failed to delete client");
+      const errorKey =
+        result.errorCode === "CLIENT_HAS_APPOINTMENTS"
+          ? "clients.errors.deleteHasAppointments"
+          : "clients.errors.deleteFailed";
+      setError(t(errorKey));
     }
   };
 

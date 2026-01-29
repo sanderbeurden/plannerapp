@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { X, Search, Loader2, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus } from "@/types";
 import { useServices, useClients } from "./hooks/useAppointments";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 function capitalizeFirst(value: string): string {
   if (!value) return value;
@@ -37,7 +38,6 @@ export function AppointmentModal({
   onClose,
   onSave,
 }: AppointmentModalProps) {
-  const ref = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { services, loading: loadingServices } = useServices();
   const [clientSearch, setClientSearch] = useState("");
@@ -123,26 +123,16 @@ export function AppointmentModal({
     setNewClientLastName("");
   };
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!selectedClient) {
-      setError("Please select a client");
+      setError(t("appointment.errors.selectClient"));
       return;
     }
     if (!selectedService) {
-      setError("Please select a service");
+      setError(t("appointment.errors.selectService"));
       return;
     }
 
@@ -163,11 +153,11 @@ export function AppointmentModal({
       if (success) {
         onClose();
       } else {
-        setError("Failed to save appointment. There may be a scheduling conflict.");
+        setError(t("appointment.errors.saveConflict"));
       }
     } catch (err) {
       console.error("Failed to save appointment:", err);
-      setError("Failed to save appointment. Please try again.");
+      setError(t("appointment.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -175,34 +165,24 @@ export function AppointmentModal({
 
   const endDateTime = new Date(startDateTime.getTime() + customDuration * 60 * 1000);
 
-  // Check for overlaps with existing appointments
-  const checkOverlap = (time: Date) => {
-    const currentAppointmentId = appointment?.id;
-    return existingAppointments.some((apt) => {
-      // Skip the current appointment when editing
-      if (apt.id === currentAppointmentId) return false;
-      // Skip cancelled appointments
-      if (apt.status === "cancelled") return false;
-      const aptStart = new Date(apt.startUtc);
-      const aptEnd = new Date(apt.endUtc);
-      return time >= aptStart && time < aptEnd;
-    });
-  };
-
-  const startOverlaps = selectedService && checkOverlap(startDateTime);
-  const endOverlaps = selectedService && checkOverlap(endDateTime);
-  const hasOverlap = startOverlaps || endOverlaps;
+  // Check for overlaps with existing appointments (full interval)
+  const hasOverlap = selectedService
+    ? existingAppointments.some((apt) => {
+        if (apt.id === appointment?.id) return false;
+        if (apt.status === "cancelled") return false;
+        const aptStart = new Date(apt.startUtc);
+        const aptEnd = new Date(apt.endUtc);
+        return startDateTime < aptEnd && endDateTime > aptStart;
+      })
+    : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-      <div
-        ref={ref}
-        className="w-full max-w-lg max-h-[90vh] overflow-auto rounded-2xl border border-border bg-card shadow-soft animate-appointment-appear"
-      >
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-auto p-0 animate-appointment-appear">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-3">
-          <h2 className="text-lg font-semibold">
+          <DialogTitle>
             {mode === "create" ? t("appointment.newAppointment") : t("appointment.editAppointment")}
-          </h2>
+          </DialogTitle>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
@@ -409,16 +389,16 @@ export function AppointmentModal({
                         </span>
                           </button>
                         ))}
-                        {filteredServices.length === 0 && !serviceSearch && (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No services yet. Add services in Settings → Services.
-                          </div>
-                        )}
-                        {filteredServices.length === 0 && serviceSearch && (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No matching services
-                          </div>
-                        )}
+                            {filteredServices.length === 0 && !serviceSearch && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                {t("services.noServicesInline")}
+                              </div>
+                            )}
+                            {filteredServices.length === 0 && serviceSearch && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                {t("services.noMatching")}
+                              </div>
+                            )}
                       </>
                     )}
                   </div>
@@ -455,7 +435,7 @@ export function AppointmentModal({
               >
                 <div className="relative">
                   <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
-                    Start
+                    {t("appointment.start")}
                   </label>
                   <input
                     type="time"
@@ -469,14 +449,14 @@ export function AppointmentModal({
                     step="900"
                     className={cn(
                       "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
-                      startOverlaps ? "border-red-300 bg-red-50" : "border-input"
+                      hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
                   />
                 </div>
                 {selectedService && (
                   <div className="relative">
                     <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
-                      End
+                      {t("appointment.end")}
                     </label>
                     <input
                       type="time"
@@ -498,7 +478,7 @@ export function AppointmentModal({
                       step="900"
                       className={cn(
                         "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
-                        endOverlaps ? "border-red-300 bg-red-50" : "border-input"
+                        hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                       )}
                     />
                   </div>
@@ -520,13 +500,13 @@ export function AppointmentModal({
                           onClick={() => setCustomDuration(selectedService.durationMinutes)}
                           className="ml-2 text-xs underline hover:text-foreground"
                         >
-                          reset
+                          {t("appointment.resetDuration")}
                         </button>
                       )}
                     </span>
                     {hasOverlap && (
                       <span className="text-sm text-red-600 font-medium">
-                        Overlaps
+                        {t("appointment.overlapsShort")}
                       </span>
                     )}
                   </div>
@@ -584,7 +564,7 @@ export function AppointmentModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

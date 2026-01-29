@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Appointment,
   AppointmentWithDetails,
@@ -23,6 +23,7 @@ export function useAppointments(from: Date, to: Date) {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const appointmentsAbortRef = useRef<AbortController | null>(null);
 
   // Use stable timestamps for dependency tracking
   const fromTime = from.getTime();
@@ -31,6 +32,9 @@ export function useAppointments(from: Date, to: Date) {
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     setError(null);
+    appointmentsAbortRef.current?.abort();
+    const controller = new AbortController();
+    appointmentsAbortRef.current = controller;
 
     try {
       const params = new URLSearchParams({
@@ -40,6 +44,7 @@ export function useAppointments(from: Date, to: Date) {
 
       const response = await fetch(`/api/appointments?${params}`, {
         credentials: "include",
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -51,15 +56,24 @@ export function useAppointments(from: Date, to: Date) {
       };
       setAppointments(data.data);
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [fromTime, toTime]);
 
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  useEffect(() => {
+    return () => appointmentsAbortRef.current?.abort();
+  }, []);
 
   const createAppointment = useCallback(
     async (input: CreateAppointmentInput): Promise<Appointment | null> => {
@@ -157,25 +171,40 @@ export function useAppointments(from: Date, to: Date) {
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const servicesAbortRef = useRef<AbortController | null>(null);
 
   const fetchServices = useCallback(async () => {
     setLoading(true);
+    servicesAbortRef.current?.abort();
+    const controller = new AbortController();
+    servicesAbortRef.current = controller;
     try {
       const response = await fetch("/api/services", {
         credentials: "include",
+        signal: controller.signal,
       });
       if (response.ok) {
         const data = (await response.json()) as { data: Service[] };
         setServices(data.data);
       }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
+
+  useEffect(() => {
+    return () => servicesAbortRef.current?.abort();
+  }, []);
 
   const createService = useCallback(
     async (input: {
@@ -258,26 +287,41 @@ export function useServices() {
 export function useClients(searchQuery: string = "") {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const clientsAbortRef = useRef<AbortController | null>(null);
 
   const fetchClients = useCallback(async (query?: string) => {
     setLoading(true);
+    clientsAbortRef.current?.abort();
+    const controller = new AbortController();
+    clientsAbortRef.current = controller;
     try {
       const params = query ? `?q=${encodeURIComponent(query)}` : "";
       const response = await fetch(`/api/clients${params}`, {
         credentials: "include",
+        signal: controller.signal,
       });
       if (response.ok) {
         const data = (await response.json()) as { data: Client[] };
         setClients(data.data);
       }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchClients(searchQuery);
   }, [searchQuery, fetchClients]);
+
+  useEffect(() => {
+    return () => clientsAbortRef.current?.abort();
+  }, []);
 
   const createClient = useCallback(
     async (input: {
@@ -344,7 +388,10 @@ export function useClients(searchQuery: string = "") {
     []
   );
 
-  const deleteClient = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+  const deleteClient = useCallback(
+    async (
+      id: string
+    ): Promise<{ success: boolean; error?: string; errorCode?: string }> => {
     try {
       const response = await fetch(`/api/clients/${id}`, {
         method: "DELETE",
@@ -353,7 +400,11 @@ export function useClients(searchQuery: string = "") {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        return { success: false, error: data.error || "Failed to delete client" };
+        return {
+          success: false,
+          error: data.error || "Failed to delete client",
+          errorCode: data.code,
+        };
       }
 
       setClients((prev) => prev.filter((c) => c.id !== id));
@@ -361,7 +412,9 @@ export function useClients(searchQuery: string = "") {
     } catch {
       return { success: false, error: "Failed to delete client" };
     }
-  }, []);
+    },
+    []
+  );
 
   return { clients, loading, createClient, updateClient, deleteClient, refetch: () => fetchClients(searchQuery) };
 }
