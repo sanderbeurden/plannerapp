@@ -1,4 +1,4 @@
-# Planner App
+# Sjedule
 
 React SPA (Vite) + Hono API (Bun).
 
@@ -32,7 +32,7 @@ Environment variables:
 - `CORS_ORIGIN` (comma-separated)
 - `APP_BASE_URL` (e.g. `https://app.example.com`)
 - `RESEND_API_KEY`
-- `RESEND_FROM` (e.g. `Salon Daybook <hello@yourdomain.com>`)
+- `RESEND_FROM` (e.g. `Sjedule <hello@yourdomain.com>`)
 
 ## Health check
 - `GET http://localhost:3001/api/health`

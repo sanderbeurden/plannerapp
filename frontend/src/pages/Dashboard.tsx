@@ -36,9 +36,9 @@ export function Dashboard() {
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Planner
+              {t("landing.tagline")}
             </p>
-            <p className="text-lg font-semibold text-foreground">Salon Daybook</p>
+            <p className="text-lg font-semibold text-foreground">Sjedule</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden text-sm text-muted-foreground md:block mr-2">

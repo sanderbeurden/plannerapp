@@ -155,7 +155,7 @@ export const nl: TranslationKeys = {
   },
   landing: {
     tagline: "Planner",
-    title: "Salon Daybook",
+    title: "Sjedule",
     subtitle: "Eenvoudige afspraakplanning voor kapperszaken en schoonheidsstudio's",
     getStarted: "Aan de Slag",
     signIn: "Inloggen",

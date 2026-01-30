@@ -1,4 +1,4 @@
-# Planner App MVP Plan
+# Sjedule MVP Plan
 
 ## Product Goal
 Build a React SPA + Hono backend for a single salon owner (beautician/barber) to log in and manage appointments. Store all timestamps in UTC and render in the user’s local browser time.

@@ -153,7 +153,7 @@ export const en = {
   },
   landing: {
     tagline: "Planner",
-    title: "Salon Daybook",
+    title: "Sjedule",
     subtitle: "Simple appointment scheduling for hair salons and beauty studios",
     getStarted: "Get Started",
     signIn: "Sign In",

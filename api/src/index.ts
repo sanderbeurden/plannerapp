@@ -213,7 +213,7 @@ app.post("/api/auth/signup", async c => {
   try {
     await sendEmail({
       to: email,
-      subject: "Verify your Salon Daybook account",
+      subject: "Verify your Sjedule account",
       text: `Click to verify your email: ${verifyLink}`,
       html: `<p>Click to verify your email:</p><p><a href="${verifyLink}">${verifyLink}</a></p>`,
     });
@@ -297,7 +297,7 @@ app.post("/api/auth/verify/resend", async c => {
   try {
     await sendEmail({
       to: email,
-      subject: "Verify your Salon Daybook account",
+      subject: "Verify your Sjedule account",
       text: `Click to verify your email: ${verifyLink}`,
       html: `<p>Click to verify your email:</p><p><a href="${verifyLink}">${verifyLink}</a></p>`,
     });
@@ -345,7 +345,7 @@ app.post("/api/auth/password-reset/request", async c => {
   try {
     await sendEmail({
       to: email,
-      subject: "Reset your Salon Daybook password",
+      subject: "Reset your Sjedule password",
       text: `Click to reset your password: ${resetLink}`,
       html: `<p>Click to reset your password:</p><p><a href="${resetLink}">${resetLink}</a></p>`,
     });
