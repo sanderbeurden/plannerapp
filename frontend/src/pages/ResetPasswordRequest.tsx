@@ -34,6 +34,8 @@ export function ResetPasswordRequest() {
         const errorKey =
           data.code === "RATE_LIMIT"
             ? "auth.rateLimited"
+            : data.code === "AUTH_EMAIL_SEND_FAILED"
+              ? "auth.emailSendFailed"
             : "auth.signUpError";
         setStatus("error");
         setMessage(t(errorKey));
@@ -89,7 +91,7 @@ export function ResetPasswordRequest() {
               </div>
             </label>
             <Button className="w-full" size="lg" disabled={status === "loading"}>
-              {status === "loading" ? `${t("auth.passwordReset")}...` : t("auth.passwordReset")}
+              {status === "loading" ? `${t("auth.passwordResetRequestSubmit")}...` : t("auth.passwordResetRequestSubmit")}
             </Button>
           </form>
 

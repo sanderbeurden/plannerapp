@@ -1,5 +1,5 @@
-import { describe, expect, test, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import { AppointmentBlock } from "./AppointmentBlock";
 import type { AppointmentWithDetails } from "@/types";
 
@@ -32,6 +32,10 @@ const baseAppointment: AppointmentWithDetails = {
 };
 
 describe("AppointmentBlock", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   test("renders compact layout when height is small", () => {
     render(
       <AppointmentBlock

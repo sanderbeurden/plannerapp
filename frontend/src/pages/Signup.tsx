@@ -34,6 +34,8 @@ export function Signup() {
             ? "auth.rateLimited"
             : result.errorCode === "AUTH_EMAIL_EXISTS"
               ? "auth.emailExists"
+              : result.errorCode === "AUTH_EMAIL_SEND_FAILED"
+                ? "auth.emailSendFailed"
               : "auth.signUpError";
         setMessage(t(errorKey));
         return;

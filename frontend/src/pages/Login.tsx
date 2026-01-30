@@ -65,7 +65,14 @@ export function Login() {
         body: JSON.stringify({ email: lastEmail }),
       });
       if (!response.ok) {
-        setResendMessage(t("auth.rateLimited"));
+        const data = (await response.json().catch(() => ({}))) as { code?: string };
+        const errorKey =
+          data.code === "RATE_LIMIT"
+            ? "auth.rateLimited"
+            : data.code === "AUTH_EMAIL_SEND_FAILED"
+              ? "auth.emailSendFailed"
+              : "auth.signUpError";
+        setResendMessage(t(errorKey));
         return;
       }
       setResendMessage(t("auth.verificationResent"));

@@ -29,6 +29,10 @@ bun run migrate
 
 Environment variables:
 - `DB_PATH` (default `data/app.db`)
+- `CORS_ORIGIN` (comma-separated)
+- `APP_BASE_URL` (e.g. `https://app.example.com`)
+- `RESEND_API_KEY`
+- `RESEND_FROM` (e.g. `Salon Daybook <hello@yourdomain.com>`)
 
 ## Health check
 - `GET http://localhost:3001/api/health`

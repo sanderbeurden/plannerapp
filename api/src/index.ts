@@ -14,6 +14,7 @@ import { db } from "./db/client";
 import { jsonCreated, jsonError, jsonOk } from "./http";
 import { getClientIp, isRateLimited, logAuthFailure } from "./security";
 import { hashToken } from "./auth";
+import { sendEmail } from "./email";
 import {
   mapAppointment,
   mapClient,
@@ -47,11 +48,13 @@ function validateEnvironment() {
   const missing = [];
   if (!process.env.CORS_ORIGIN) missing.push("CORS_ORIGIN");
   if (!process.env.APP_BASE_URL) missing.push("APP_BASE_URL");
+  if (!process.env.RESEND_API_KEY) missing.push("RESEND_API_KEY");
+  if (!process.env.RESEND_FROM) missing.push("RESEND_FROM");
 
   if (missing.length > 0) {
     const message = `[env] Missing ${missing.join(
       ", "
-    )}. Using defaults may be unsafe in production.`;
+    )}. Email delivery may fail and defaults may be unsafe in production.`;
     if (process.env.NODE_ENV === "production") {
       throw new Error(message);
     }
@@ -81,11 +84,6 @@ function createTokenWithExpiry(hours: number) {
   const tokenHash = hashToken(token);
   const expiresAt = Math.floor(Date.now() / 1000) + hours * 60 * 60;
   return { token, tokenHash, expiresAt };
-}
-
-function sendEmail(to: string, subject: string, body: string) {
-  // Stub: replace with real email provider in production.
-  console.log(`[email] to=${to} subject="${subject}"\n${body}`);
 }
 
 validateEnvironment();
@@ -212,11 +210,17 @@ app.post("/api/auth/signup", async c => {
   ).run(crypto.randomUUID(), userId, verification.tokenHash, verification.expiresAt);
 
   const verifyLink = `${APP_BASE_URL}/verify?token=${verification.token}`;
-  sendEmail(
-    email,
-    "Verify your Salon Daybook account",
-    `Click to verify your email: ${verifyLink}`
-  );
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Verify your Salon Daybook account",
+      text: `Click to verify your email: ${verifyLink}`,
+      html: `<p>Click to verify your email:</p><p><a href="${verifyLink}">${verifyLink}</a></p>`,
+    });
+  } catch (err) {
+    console.error("Failed to send verification email:", err);
+    return jsonError(c, "Failed to send verification email.", 502, "AUTH_EMAIL_SEND_FAILED");
+  }
 
   return c.json({ ok: true, verificationRequired: true });
 });
@@ -290,11 +294,17 @@ app.post("/api/auth/verify/resend", async c => {
   ).run(crypto.randomUUID(), user.id, verification.tokenHash, verification.expiresAt);
 
   const verifyLink = `${APP_BASE_URL}/verify?token=${verification.token}`;
-  sendEmail(
-    email,
-    "Verify your Salon Daybook account",
-    `Click to verify your email: ${verifyLink}`
-  );
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Verify your Salon Daybook account",
+      text: `Click to verify your email: ${verifyLink}`,
+      html: `<p>Click to verify your email:</p><p><a href="${verifyLink}">${verifyLink}</a></p>`,
+    });
+  } catch (err) {
+    console.error("Failed to send verification email:", err);
+    return jsonError(c, "Failed to send verification email.", 502, "AUTH_EMAIL_SEND_FAILED");
+  }
 
   return jsonOk(c, { ok: true });
 });
@@ -332,11 +342,17 @@ app.post("/api/auth/password-reset/request", async c => {
   ).run(crypto.randomUUID(), user.id, reset.tokenHash, reset.expiresAt);
 
   const resetLink = `${APP_BASE_URL}/reset/confirm?token=${reset.token}`;
-  sendEmail(
-    email,
-    "Reset your Salon Daybook password",
-    `Click to reset your password: ${resetLink}`
-  );
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Reset your Salon Daybook password",
+      text: `Click to reset your password: ${resetLink}`,
+      html: `<p>Click to reset your password:</p><p><a href="${resetLink}">${resetLink}</a></p>`,
+    });
+  } catch (err) {
+    console.error("Failed to send reset email:", err);
+    return jsonError(c, "Failed to send reset email.", 502, "AUTH_EMAIL_SEND_FAILED");
+  }
 
   return jsonOk(c, { ok: true });
 });
