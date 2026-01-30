@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Settings, Scissors, Users, Sliders } from "lucide-react";
+import { LogOut, Settings, Scissors, Sparkles, Users, Sliders } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,16 @@ export function Dashboard() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-card/70">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              {t("landing.tagline")}
-            </p>
-            <p className="text-lg font-semibold text-foreground">Sjedule</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                {t("landing.tagline")}
+              </p>
+              <p className="text-lg font-semibold text-foreground">{t("landing.title")}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden text-sm text-muted-foreground md:block mr-2">

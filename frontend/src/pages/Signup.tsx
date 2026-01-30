@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, Mail, UserRound } from "lucide-react";
+import { Lock, Mail, Sparkles, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -55,11 +55,16 @@ export function Signup() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/70">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              {t("landing.tagline")}
-            </p>
-            <p className="text-lg font-semibold text-foreground">{t("landing.title")}</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                {t("landing.tagline")}
+              </p>
+              <p className="text-lg font-semibold text-foreground">{t("landing.title")}</p>
+            </div>
           </div>
           <Button asChild variant="ghost">
             <Link to="/">{t("common.back")}</Link>

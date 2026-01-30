@@ -83,11 +83,11 @@ export function Landing() {
               <p className="text-lg font-semibold">{t("landing.title")}</p>
             </div>
           </div>
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="flex items-center gap-3">
             <Button asChild variant="ghost">
               <Link to="/login">{t("landing.signIn")}</Link>
             </Button>
-            <Button onClick={handleStartClick}>{t("landing.getStarted")}</Button>
+            <Button className="hidden md:inline-flex" onClick={handleStartClick}>{t("landing.getStarted")}</Button>
           </div>
         </div>
       </header>
