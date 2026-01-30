@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSettings, type Language } from "@/lib/settings";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { apiUrl } from "@/lib/api";
 
 const START_HOUR_OPTIONS = [6, 7, 8, 9, 10, 11, 12];
 const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
@@ -22,7 +23,7 @@ export function Settings() {
   const handleExport = async (endpoint: string, filename: string) => {
     setExportMessage("");
     try {
-      const response = await fetch(endpoint, { credentials: "include" });
+      const response = await fetch(apiUrl(endpoint), { credentials: "include" });
       if (!response.ok) {
         setExportMessage(t("settings.exportFailed"));
         return;
@@ -53,7 +54,7 @@ export function Settings() {
 
     setDeleting(true);
     try {
-      const response = await fetch("/api/account/delete", {
+      const response = await fetch(apiUrl("/api/account/delete"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

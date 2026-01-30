@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl } from "@/lib/api";
 import type {
   Appointment,
   AppointmentWithDetails,
@@ -42,7 +43,7 @@ export function useAppointments(from: Date, to: Date) {
         to: new Date(toTime).toISOString(),
       });
 
-      const response = await fetch(`/api/appointments?${params}`, {
+      const response = await fetch(apiUrl(`/api/appointments?${params}`), {
         credentials: "include",
         signal: controller.signal,
       });
@@ -78,7 +79,7 @@ export function useAppointments(from: Date, to: Date) {
   const createAppointment = useCallback(
     async (input: CreateAppointmentInput): Promise<Appointment | null> => {
       try {
-        const response = await fetch("/api/appointments", {
+        const response = await fetch(apiUrl("/api/appointments"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -107,7 +108,7 @@ export function useAppointments(from: Date, to: Date) {
       input: UpdateAppointmentInput
     ): Promise<Appointment | null> => {
       try {
-        const response = await fetch(`/api/appointments/${id}`, {
+        const response = await fetch(apiUrl(`/api/appointments/${id}`), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -133,7 +134,7 @@ export function useAppointments(from: Date, to: Date) {
   const deleteAppointment = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const response = await fetch(`/api/appointments/${id}`, {
+        const response = await fetch(apiUrl(`/api/appointments/${id}`), {
           method: "DELETE",
           credentials: "include",
         });
@@ -179,7 +180,7 @@ export function useServices() {
     const controller = new AbortController();
     servicesAbortRef.current = controller;
     try {
-      const response = await fetch("/api/services", {
+      const response = await fetch(apiUrl("/api/services"), {
         credentials: "include",
         signal: controller.signal,
       });
@@ -213,7 +214,7 @@ export function useServices() {
       priceCents?: number;
     }): Promise<Service | null> => {
       try {
-        const response = await fetch("/api/services", {
+        const response = await fetch(apiUrl("/api/services"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -240,7 +241,7 @@ export function useServices() {
       input: { name?: string; durationMinutes?: number; priceCents?: number }
     ): Promise<Service | null> => {
       try {
-        const response = await fetch(`/api/services/${id}`, {
+        const response = await fetch(apiUrl(`/api/services/${id}`), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -265,7 +266,7 @@ export function useServices() {
 
   const deleteService = useCallback(async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/services/${id}`, {
+      const response = await fetch(apiUrl(`/api/services/${id}`), {
         method: "DELETE",
         credentials: "include",
       });
@@ -296,7 +297,7 @@ export function useClients(searchQuery: string = "") {
     clientsAbortRef.current = controller;
     try {
       const params = query ? `?q=${encodeURIComponent(query)}` : "";
-      const response = await fetch(`/api/clients${params}`, {
+      const response = await fetch(apiUrl(`/api/clients${params}`), {
         credentials: "include",
         signal: controller.signal,
       });
@@ -332,7 +333,7 @@ export function useClients(searchQuery: string = "") {
       notes?: string;
     }): Promise<Client | null> => {
       try {
-        const response = await fetch("/api/clients", {
+        const response = await fetch(apiUrl("/api/clients"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -365,7 +366,7 @@ export function useClients(searchQuery: string = "") {
       }
     ): Promise<Client | null> => {
       try {
-        const response = await fetch(`/api/clients/${id}`, {
+        const response = await fetch(apiUrl(`/api/clients/${id}`), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -393,7 +394,7 @@ export function useClients(searchQuery: string = "") {
       id: string
     ): Promise<{ success: boolean; error?: string; errorCode?: string }> => {
     try {
-      const response = await fetch(`/api/clients/${id}`, {
+      const response = await fetch(apiUrl(`/api/clients/${id}`), {
         method: "DELETE",
         credentials: "include",
       });

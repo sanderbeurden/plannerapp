@@ -4,6 +4,7 @@ import { Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
+import { apiUrl } from "@/lib/api";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -22,7 +23,7 @@ export function ResetPasswordRequest() {
     const email = String(formData.get("email") ?? "");
 
     try {
-      const response = await fetch("/api/auth/password-reset/request", {
+      const response = await fetch(apiUrl("/api/auth/password-reset/request"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

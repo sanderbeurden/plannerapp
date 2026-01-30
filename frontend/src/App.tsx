@@ -14,6 +14,7 @@ import { Services } from "@/pages/Services";
 import { Settings } from "@/pages/Settings";
 import { Signup } from "@/pages/Signup";
 import { VerifyEmail } from "@/pages/VerifyEmail";
+import { Analytics } from "@vercel/analytics/react";
 
 export function App() {
   return (
@@ -36,6 +37,7 @@ export function App() {
               </Route>
               <Route path="*" element={<Landing />} />
             </Routes>
+            <Analytics />
           </AuthProvider>
         </I18nProvider>
       </SettingsProvider>

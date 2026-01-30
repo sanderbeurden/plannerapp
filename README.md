@@ -34,6 +34,9 @@ Environment variables:
 - `RESEND_API_KEY`
 - `RESEND_FROM` (e.g. `Sjedule <hello@yourdomain.com>`)
 
+Frontend (Vercel) env:
+- `VITE_API_URL` (e.g. `https://api.sjedule.com`)
+
 ## Health check
 - `GET http://localhost:3001/api/health`
 

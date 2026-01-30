@@ -5,6 +5,7 @@ import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "@/lib/i18n";
+import { apiUrl } from "@/lib/api";
 
 type Status = "idle" | "loading" | "error";
 
@@ -58,7 +59,7 @@ export function Login() {
     if (!lastEmail) return;
     setResendMessage("");
     try {
-      const response = await fetch("/api/auth/verify/resend", {
+      const response = await fetch(apiUrl("/api/auth/verify/resend"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

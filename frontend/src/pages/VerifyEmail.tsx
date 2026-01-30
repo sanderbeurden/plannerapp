@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
+import { apiUrl } from "@/lib/api";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -21,7 +22,7 @@ export function VerifyEmail() {
 
     let cancelled = false;
     setStatus("loading");
-    fetch("/api/auth/verify", {
+    fetch(apiUrl("/api/auth/verify"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
