@@ -959,7 +959,7 @@ app.get("/api/exports/clients", c => {
   const user = c.get("user");
   const rows = db
     .query(
-      `SELECT id, first_name, last_name, email, phone, notes, created_at
+      `SELECT first_name, last_name, email, phone, notes, created_at
        FROM clients
        WHERE user_id = ?
        ORDER BY first_name ASC, last_name ASC`
@@ -967,7 +967,6 @@ app.get("/api/exports/clients", c => {
     .all(user.id) as Record<string, unknown>[];
 
   const headers = [
-    "id",
     "first_name",
     "last_name",
     "email",
@@ -988,7 +987,6 @@ app.get("/api/exports/appointments", c => {
   const rows = db
     .query(
       `SELECT
-         a.id,
          a.start_time,
          a.end_time,
          a.status,
@@ -1008,7 +1006,6 @@ app.get("/api/exports/appointments", c => {
     .all(user.id) as Record<string, unknown>[];
 
   const headers = [
-    "id",
     "start_time",
     "end_time",
     "status",
