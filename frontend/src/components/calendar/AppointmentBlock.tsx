@@ -9,6 +9,7 @@ type AppointmentBlockProps = {
   onClick: () => void;
   onDragStart?: (e: React.DragEvent) => void;
   isDragging?: boolean;
+  compact?: boolean;
 };
 
 export function AppointmentBlock({
@@ -18,6 +19,7 @@ export function AppointmentBlock({
   onClick,
   onDragStart,
   isDragging,
+  compact,
 }: AppointmentBlockProps) {
   const start = new Date(appointment.startUtc);
   const end = new Date(appointment.endUtc);
@@ -58,11 +60,12 @@ export function AppointmentBlock({
       draggable
       onDragStart={onDragStart}
     >
-      <div className="flex h-full flex-col p-2">
+      <div className={cn("flex h-full flex-col", compact ? "p-1.5" : "p-2")}>
         <div className="flex items-start justify-between gap-1">
           <span
             className={cn(
-              "text-sm font-semibold text-foreground truncate",
+              "font-semibold text-foreground truncate",
+              compact ? "text-xs" : "text-sm",
               appointment.status === "cancelled" && "line-through"
             )}
           >
@@ -77,10 +80,10 @@ export function AppointmentBlock({
 
         {showDetails && (
           <>
-            <span className="text-sm text-muted-foreground truncate">
+            <span className={cn("text-muted-foreground truncate", compact ? "text-xs" : "text-sm")}>
               {appointment.client.fullName}
             </span>
-            <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
+            <div className={cn("mt-auto flex items-center justify-between text-muted-foreground", compact ? "text-[10px]" : "text-xs")}>
               <span>{timeRange}</span>
               <span>{formatDuration(durationMinutes)}</span>
             </div>

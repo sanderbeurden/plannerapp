@@ -214,8 +214,7 @@ export function DayView({
   return (
     <div
       ref={containerRef}
-      className="relative overflow-auto rounded-xl border border-border bg-card"
-      style={{ height: `calc(100vh - 280px)` }}
+      className="relative overflow-auto rounded-xl border border-border bg-card h-[calc(100dvh-160px)] md:h-[calc(100vh-280px)]"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnd={handleDragEnd}
