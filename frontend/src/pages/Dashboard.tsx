@@ -96,7 +96,7 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-6 pt-6 pb-24 md:pb-6">
+      <main className="mx-auto w-full max-w-7xl px-3 pt-2 pb-20 md:px-6 md:pt-6 md:pb-6">
         <Calendar />
       </main>
     </div>

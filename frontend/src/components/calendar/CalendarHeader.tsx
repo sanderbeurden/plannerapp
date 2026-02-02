@@ -44,22 +44,22 @@ export function CalendarHeader() {
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-row items-center justify-between gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="outline"
           size="sm"
           onClick={goToToday}
-          className="hidden sm:inline-flex"
+          className="h-7 text-xs px-2 sm:h-9 sm:text-sm sm:px-3"
         >
           {t("calendar.today")}
         </Button>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={goToPrevious}
-            className="h-8 w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -67,22 +67,22 @@ export function CalendarHeader() {
             variant="ghost"
             size="icon"
             onClick={goToNext}
-            className="h-8 w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold">{formatDateLocalized(selectedDate, monthNames)}</h2>
+            <h2 className="text-base md:text-xl font-semibold">{formatDateLocalized(selectedDate, monthNames)}</h2>
             <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+                  className="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground sm:hidden"
                   aria-label={view === "week" ? t("calendar.week") : t("appointment.date")}
                 >
-                  <CalendarIcon className="h-4 w-4" />
+                  <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -110,19 +110,11 @@ export function CalendarHeader() {
               </PopoverContent>
             </Popover>
           </div>
-          <p className="text-sm text-muted-foreground">{todayLabel}</p>
+          <p className="hidden md:block text-sm text-muted-foreground">{todayLabel}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goToToday}
-          className="sm:hidden"
-        >
-          {t("calendar.today")}
-        </Button>
         <ViewSwitcher view={view} onViewChange={setView} />
         <Button onClick={() => openCreateModal()} className="hidden sm:inline-flex">
           <Plus className="h-4 w-4" />

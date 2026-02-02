@@ -1,11 +1,10 @@
 import { cn } from "@/lib/utils";
-import { useSettings } from "@/lib/settings";
 import { useTranslation } from "@/lib/i18n";
 import { useCalendar } from "./hooks/useCalendar";
+import { MobileWeekGrid } from "./MobileWeekGrid";
 import {
   getWeekDays,
   formatDayOfWeekShortLocalized,
-  getDurationMinutes,
   isSameDay,
   isToday,
 } from "./hooks/useDateUtils";
@@ -15,186 +14,38 @@ type WeekViewProps = {
   appointments: AppointmentWithDetails[];
   onAppointmentClick: (appointment: AppointmentWithDetails) => void;
   onDayClick: (date: Date, scrollToMinutes?: number) => void;
+  onSlotClick: (start: Date, end: Date) => void;
+  onReschedule: (appointmentId: string, newStart: Date, newEnd: Date) => void;
 };
 
 export function WeekView({
   appointments,
   onAppointmentClick,
   onDayClick,
+  onSlotClick,
+  onReschedule,
 }: WeekViewProps) {
   const { selectedDate } = useCalendar();
-  const { settings } = useSettings();
   const { dayNamesShort } = useTranslation();
   const weekDays = getWeekDays(selectedDate);
-
-  const MOBILE_START_HOUR = settings.calendarStartHour;
-  const MOBILE_END_HOUR = settings.calendarEndHour;
-  const MOBILE_HOURS = Array.from(
-    { length: MOBILE_END_HOUR - MOBILE_START_HOUR },
-    (_, i) => MOBILE_START_HOUR + i
-  );
 
   const getAppointmentsForDay = (date: Date) =>
     appointments.filter((apt) => isSameDay(new Date(apt.startUtc), date));
 
-  const handleAppointmentTap = (apt: AppointmentWithDetails, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const start = new Date(apt.startUtc);
-    const minutesFromStart = Math.max(
-      0,
-      (start.getHours() - MOBILE_START_HOUR) * 60 + start.getMinutes()
-    );
-    onDayClick(new Date(apt.startUtc), minutesFromStart);
-  };
-
-  const getAppointmentPosition = (apt: AppointmentWithDetails) => {
-    const start = new Date(apt.startUtc);
-    const end = new Date(apt.endUtc);
-    const startMinutes = (start.getHours() - MOBILE_START_HOUR) * 60 + start.getMinutes();
-    const duration = getDurationMinutes(start, end);
-    const totalMinutes = (MOBILE_END_HOUR - MOBILE_START_HOUR) * 60;
-    
-    const topPercent = Math.max(0, (startMinutes / totalMinutes) * 100);
-    const heightPercent = Math.max(2, (duration / totalMinutes) * 100);
-    
-    return { topPercent, heightPercent, isVisible: startMinutes + duration > 0 && startMinutes < totalMinutes };
-  };
-
-  const getClickMinutes = (yOffset: number, height: number) => {
-    const totalMinutes = (MOBILE_END_HOUR - MOBILE_START_HOUR) * 60;
-    const ratio = height > 0 ? yOffset / height : 0;
-    const clampedRatio = Math.max(0, Math.min(1, ratio));
-    const rawMinutes = clampedRatio * totalMinutes;
-    return Math.round(rawMinutes / 15) * 15;
-  };
-
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      {/* Mobile: Week grid with hours */}
+    <div>
+      {/* Mobile: Three-day time view */}
       <div className="md:hidden">
-        {/* Header: Day names and dates */}
-        <div className="grid grid-cols-[2rem_1fr] border-b border-border/60">
-          <div /> {/* Spacer for hour column */}
-          <div className="grid grid-cols-7">
-            {weekDays.map((day, i) => {
-              const dayIsToday = isToday(day);
-              const isSelected = isSameDay(day, selectedDate);
-              return (
-                <button
-                  key={i}
-                  className={cn(
-                    "flex flex-col items-center py-2 active:bg-muted/50",
-                    i < 6 && "border-r border-border/40",
-                    isSelected && "bg-primary/5"
-                  )}
-                  onClick={() => onDayClick(day)}
-                >
-                  <span className="text-[9px] uppercase text-muted-foreground">
-                    {formatDayOfWeekShortLocalized(day, dayNamesShort)}
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
-                      dayIsToday && "bg-primary text-primary-foreground",
-                      isSelected && !dayIsToday && "ring-1 ring-primary"
-                    )}
-                  >
-                    {day.getDate()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Time grid - row by row for perfect alignment */}
-        <div className="relative">
-          {/* Grid rows */}
-          {MOBILE_HOURS.map((hour, hourIndex) => (
-            <div
-              key={hour}
-              className={cn(
-                "grid grid-cols-[2rem_1fr] h-8",
-                hourIndex > 0 && "border-t border-border/30"
-              )}
-            >
-              {/* Hour label */}
-              <div className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground pt-px">
-                {hour}h
-              </div>
-
-              {/* Day cells for this hour */}
-              <div className="grid grid-cols-7">
-                {weekDays.map((day, dayIndex) => {
-                  const isSelected = isSameDay(day, selectedDate);
-                  return (
-                    <div
-                      key={dayIndex}
-                      className={cn(
-                        "h-full",
-                        dayIndex < 6 && "border-r border-border/30",
-                        isSelected && "bg-primary/5"
-                      )}
-                      onClick={() => {
-                        const minutesFromStart = hourIndex * 60;
-                        onDayClick(day, minutesFromStart);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Appointments overlay */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              top: 0,
-              left: '2rem',
-              right: 0,
-              height: `${MOBILE_HOURS.length * 32}px`
-            }}
-          >
-            <div className="grid grid-cols-7 h-full">
-              {weekDays.map((day, dayIndex) => {
-                const dayAppointments = getAppointmentsForDay(day);
-                return (
-                  <div key={dayIndex} className="relative h-full">
-                    {dayAppointments.map((apt) => {
-                      const { topPercent, heightPercent, isVisible } = getAppointmentPosition(apt);
-                      if (!isVisible) return null;
-
-                      return (
-                        <button
-                          key={apt.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAppointmentTap(apt, e);
-                          }}
-                          className={cn(
-                            "absolute left-0.5 right-0.5 rounded-sm active:opacity-80 pointer-events-auto",
-                            apt.status === "confirmed" && "bg-status-confirmed",
-                            apt.status === "hold" && "bg-status-hold",
-                            apt.status === "cancelled" && "bg-status-cancelled opacity-50"
-                          )}
-                          style={{
-                            top: `${topPercent}%`,
-                            height: `${Math.max(heightPercent, 3)}%`,
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <MobileWeekGrid
+          appointments={appointments}
+          onAppointmentClick={onAppointmentClick}
+          onSlotClick={onSlotClick}
+          onReschedule={onReschedule}
+        />
       </div>
 
       {/* Desktop view */}
-      <div className="hidden md:block">
+      <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden">
       {/* Header row with day names */}
       <div className="grid grid-cols-7 border-b border-border">
         {weekDays.map((day, i) => {

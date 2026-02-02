@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { CalendarContext, useCalendarState } from "./hooks/useCalendar";
 import { useAppointments } from "./hooks/useAppointments";
 import { CalendarHeader } from "./CalendarHeader";
+import { DateStrip } from "./DateStrip";
 import { DayView } from "./DayView";
 import { WeekView } from "./WeekView";
 import { MiniCalendar } from "./MiniCalendar";
@@ -123,8 +124,9 @@ export function Calendar() {
         </div>
 
         {/* Main calendar area */}
-        <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 min-w-0 space-y-2 md:space-y-4">
           <CalendarHeader />
+          <DateStrip />
 
           {loading ? (
             <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card">
@@ -148,6 +150,8 @@ export function Calendar() {
             <WeekView
               appointments={appointments}
               onAppointmentClick={handleAppointmentClick}
+              onSlotClick={handleSlotClick}
+              onReschedule={handleReschedule}
               onDayClick={(date, scrollToMinutes) => {
                 calendarState.setSelectedDate(date);
                 calendarState.setView("day");
