@@ -84,7 +84,7 @@ export function Landing() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost">
+            <Button asChild variant="outline">
               <Link to="/login">{t("landing.signIn")}</Link>
             </Button>
             <Button className="hidden md:inline-flex" onClick={handleStartClick}>{t("landing.getStarted")}</Button>
