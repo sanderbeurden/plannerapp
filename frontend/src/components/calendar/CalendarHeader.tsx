@@ -133,15 +133,28 @@ function ViewSwitcher({
   onViewChange: (view: CalendarView) => void;
 }) {
   const { t } = useTranslation();
+  const isWeek = view === "week";
+
   return (
-    <div className="flex rounded-lg border border-border bg-muted/50 p-1">
+    <div className="relative flex rounded-2xl p-[3px] bg-white/40 backdrop-blur-xl border border-white/50 shadow-[0_2px_12px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.8)]">
+      {/* Liquid blob indicator */}
+      <div
+        className={cn(
+          "absolute top-[3px] bottom-[3px] rounded-xl",
+          "bg-white/90 backdrop-blur-sm",
+          "shadow-[0_3px_12px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)]",
+          "transition-all duration-700 ease-[cubic-bezier(0.68,-0.4,0.32,1.4)]",
+          isWeek ? "left-[50%] right-[3px]" : "left-[3px] right-[50%]"
+        )}
+      />
+
       <button
         onClick={() => onViewChange("day")}
         className={cn(
-          "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+          "relative z-10 flex-1 text-center rounded-xl px-6 py-1.5 text-sm font-medium transition-colors duration-300",
           view === "day"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground/70"
         )}
       >
         {t("calendar.day")}
@@ -149,10 +162,10 @@ function ViewSwitcher({
       <button
         onClick={() => onViewChange("week")}
         className={cn(
-          "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+          "relative z-10 flex-1 text-center rounded-xl px-6 py-1.5 text-sm font-medium transition-colors duration-300",
           view === "week"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground/70"
         )}
       >
         {t("calendar.week")}
