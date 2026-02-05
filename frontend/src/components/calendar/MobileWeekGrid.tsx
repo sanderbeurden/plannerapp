@@ -20,6 +20,7 @@ type MobileWeekGridProps = {
   appointments: AppointmentWithDetails[];
   onAppointmentClick: (appointment: AppointmentWithDetails) => void;
   onSlotClick: (start: Date, end: Date) => void;
+  onDayClick: (date: Date, scrollToMinutes?: number) => void;
   onReschedule: (appointmentId: string, newStart: Date, newEnd: Date) => void;
 };
 
@@ -30,6 +31,7 @@ export function MobileWeekGrid({
   appointments,
   onAppointmentClick,
   onSlotClick,
+  onDayClick,
   onReschedule,
 }: MobileWeekGridProps) {
   const { selectedDate, setSelectedDate } = useCalendar();
@@ -115,20 +117,19 @@ export function MobileWeekGrid({
   const handleSlotClick = useCallback(
     (day: Date, hour: number, quarterIndex: number) => {
       const minute = quarterIndex * 15;
-      const start = setTimeOnDate(day, hour, minute);
-      const end = setTimeOnDate(day, hour, minute + 30);
-      onSlotClick(start, end);
+      const minutesFromStart = (hour - START_HOUR) * 60 + minute;
+      onDayClick(day, minutesFromStart);
     },
-    [onSlotClick]
+    [onDayClick, START_HOUR]
   );
 
   const getAppointmentsForDay = (date: Date) =>
     appointments.filter((apt) => isSameDay(new Date(apt.startUtc), date));
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-none border-y border-border/30 bg-card overflow-hidden -mx-4">
       {/* Column headers */}
-      <div className="grid grid-cols-[2rem_repeat(7,1fr)] border-b border-border/60">
+      <div className="grid grid-cols-[2.25rem_repeat(7,1fr)] border-b border-border/30 bg-background/50">
         <div /> {/* Spacer for time labels */}
         {weekDays.map((day, i) => {
           const dayIsToday = isToday(day);
@@ -137,18 +138,22 @@ export function MobileWeekGrid({
             <div
               key={i}
               className={cn(
-                "flex flex-col items-center py-1.5",
-                i < 6 && "border-r border-border/40"
+                "flex flex-col items-center py-2",
+                i < 6 && "border-r border-border/20"
               )}
             >
-              <span className="text-[9px] uppercase text-muted-foreground font-medium">
+              <span className={cn(
+                "text-[10px] uppercase font-medium tracking-wide",
+                isSelected || dayIsToday ? "text-primary" : "text-muted-foreground"
+              )}>
                 {formatDayOfWeekShortLocalized(day, dayNamesShort)}
               </span>
               <span
                 className={cn(
-                  "mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold",
+                  "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold transition-all",
                   dayIsToday && "bg-primary text-primary-foreground",
-                  isSelected && !dayIsToday && "ring-1 ring-primary"
+                  isSelected && !dayIsToday && "bg-foreground text-background",
+                  !isSelected && !dayIsToday && "text-foreground"
                 )}
               >
                 {day.getDate()}
@@ -162,11 +167,11 @@ export function MobileWeekGrid({
       <div
         ref={containerRef}
         className="relative overflow-auto"
-        style={{ height: "calc(100dvh - 160px)" }}
+        style={{ height: "calc(100dvh - 200px)" }}
       >
         <div className="relative flex pt-3">
           {/* Time labels column */}
-          <div className="relative w-8 flex-shrink-0 border-r border-border/60">
+          <div className="relative w-9 flex-shrink-0 border-r border-border/30">
             {hours.map((hour) => {
               const date = new Date();
               date.setHours(hour, 0, 0, 0);
@@ -176,7 +181,7 @@ export function MobileWeekGrid({
                   className="relative"
                   style={{ height: HOUR_HEIGHT }}
                 >
-                  <span className="absolute -top-2 right-1 text-[9px] text-muted-foreground">
+                  <span className="absolute -top-2 right-1.5 text-[10px] text-muted-foreground font-medium">
                     {formatTimeShort(date)}
                   </span>
                 </div>
@@ -190,18 +195,18 @@ export function MobileWeekGrid({
               key={dayIndex}
               className={cn(
                 "relative flex-1 min-w-0",
-                dayIndex < 6 && "border-r border-border/30"
+                dayIndex < 6 && "border-r border-border/15"
               )}
             >
               {/* Hour rows with 15-min slots */}
               {hours.map((hour, hourIndex) => (
                 <div
                   key={hour}
-                  className="relative border-b border-border/30"
+                  className="relative border-b border-border/20"
                   style={{ height: HOUR_HEIGHT }}
                 >
                   {hourIndex % 2 === 0 && (
-                    <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
+                    <div className="absolute inset-0 bg-muted/10 pointer-events-none" />
                   )}
 
                   {[0, 1, 2, 3].map((q) => (
@@ -209,14 +214,14 @@ export function MobileWeekGrid({
                       key={q}
                       type="button"
                       onClick={() => handleSlotClick(day, hour, q)}
-                      className="absolute left-0 right-0 cursor-pointer active:bg-primary/10 transition-colors"
+                      className="absolute left-0 right-0 cursor-pointer active:bg-primary/8 transition-colors"
                       style={{ top: q * slotHeight, height: slotHeight }}
                     />
                   ))}
 
                   {/* Half-hour line */}
                   <div
-                    className="absolute left-0 right-0 border-b border-dashed border-border/40 pointer-events-none"
+                    className="absolute left-0 right-0 border-b border-dashed border-border/25 pointer-events-none"
                     style={{ top: HOUR_HEIGHT * 0.5 }}
                   />
                 </div>

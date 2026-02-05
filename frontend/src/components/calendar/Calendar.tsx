@@ -124,9 +124,9 @@ export function Calendar() {
         </div>
 
         {/* Main calendar area */}
-        <div className="flex-1 min-w-0 space-y-2 md:space-y-4">
+        <div className="flex-1 min-w-0 space-y-3 md:space-y-4">
           <CalendarHeader />
-          <DateStrip />
+          {calendarState.view === "day" && <DateStrip />}
 
           {loading ? (
             <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card">
@@ -192,22 +192,16 @@ export function Calendar() {
       {/* Mobile FAB */}
       <button
         onClick={() => calendarState.openCreateModal()}
-        className="group fixed bottom-6 right-6 sm:hidden z-40"
+        className="group fixed bottom-6 right-5 sm:hidden z-40"
       >
-        {/* Button */}
-        <span className="relative flex h-16 w-16 items-center justify-center rounded-full
-          bg-gradient-to-b from-primary via-primary to-primary/90
-          shadow-[0_8px_30px_-6px] shadow-primary/50
-          ring-1 ring-white/10 ring-inset
-          group-active:scale-[0.92] group-active:shadow-[0_4px_15px_-4px]
-          transition-all duration-200 ease-out"
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-full
+          bg-primary text-primary-foreground
+          shadow-[0_6px_20px_rgba(0,0,0,0.25),inset_0_2px_0_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.1)]
+          group-active:scale-[0.92] group-active:shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_3px_rgba(0,0,0,0.15)]
+          transition-all duration-150 active:duration-75"
         >
-          {/* Inner highlight */}
-          <span className="absolute inset-[2px] rounded-full bg-gradient-to-b from-white/20 to-transparent opacity-80" />
-
-          {/* Icon */}
-          <Plus className="relative h-7 w-7 text-primary-foreground drop-shadow-sm
-            group-active:rotate-90 transition-transform duration-200" />
+          <Plus className="relative h-6 w-6 drop-shadow-sm
+            group-active:rotate-90 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]" />
         </span>
       </button>
     </CalendarContext.Provider>

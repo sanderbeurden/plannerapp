@@ -70,13 +70,13 @@ export function TimeGrid({
                 key={quarterIndex}
                 type="button"
                 onClick={() => handleSlotClick(hour, quarterIndex)}
-                className="absolute left-0 right-0 cursor-pointer hover:bg-primary/10 transition-colors group"
+                className="absolute left-0 right-0 cursor-pointer hover:bg-primary/10 active:bg-primary/8 transition-colors group"
                 style={{
                   top: quarterIndex * slotHeight,
                   height: slotHeight,
                 }}
               >
-                {/* Show time hint on hover */}
+                {/* Show time hint on hover (desktop only via hoverOnlyWhenSupported) */}
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   {hour.toString().padStart(2, "0")}:{(quarterIndex * 15).toString().padStart(2, "0")}
                 </span>

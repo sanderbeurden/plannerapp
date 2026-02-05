@@ -2,6 +2,9 @@ import tailwindcssAnimate from "tailwindcss-animate";
 
 /** @type {import("tailwindcss").Config} */
 const config = {
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {

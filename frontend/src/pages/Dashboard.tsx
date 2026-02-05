@@ -32,20 +32,20 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card/70">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
-              <Sparkles className="h-5 w-5" />
+      <header className="relative z-40 border-b border-border/40 bg-card/60 backdrop-blur-xl supports-[backdrop-filter]:bg-card/50">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
+          <div className="flex items-center gap-2.5 md:gap-3">
+            <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-xl md:rounded-2xl bg-primary text-primary-foreground">
+              <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              <p className="hidden md:block text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {t("landing.tagline")}
               </p>
-              <p className="text-lg font-semibold text-foreground">{t("landing.title")}</p>
+              <p className="text-base md:text-lg font-semibold text-foreground leading-tight">{t("landing.title")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="hidden text-sm text-muted-foreground md:block mr-2">
               {user?.name ?? "Owner"}
             </div>
@@ -54,49 +54,49 @@ export function Dashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowSettings(!showSettings)}
-                className={cn(showSettings && "bg-muted")}
+                className={cn("h-9 w-9", showSettings && "bg-muted")}
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-[18px] w-[18px]" />
               </Button>
               {showSettings && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border bg-card shadow-lg z-50">
-                  <div className="p-1">
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-border/60 bg-card shadow-lg z-50 animate-appointment-appear">
+                  <div className="p-1.5">
                     <Link
                       to="/app/services"
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm active:bg-muted/80 hover:bg-muted transition-colors"
                       onClick={() => setShowSettings(false)}
                     >
-                      <Scissors className="h-4 w-4" />
+                      <Scissors className="h-4 w-4 text-muted-foreground" />
                       {t("services.title")}
                     </Link>
                     <Link
                       to="/app/clients"
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm active:bg-muted/80 hover:bg-muted transition-colors"
                       onClick={() => setShowSettings(false)}
                     >
-                      <Users className="h-4 w-4" />
+                      <Users className="h-4 w-4 text-muted-foreground" />
                       {t("clients.title")}
                     </Link>
                     <Link
                       to="/app/settings"
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm active:bg-muted/80 hover:bg-muted transition-colors"
                       onClick={() => setShowSettings(false)}
                     >
-                      <Sliders className="h-4 w-4" />
+                      <Sliders className="h-4 w-4 text-muted-foreground" />
                       {t("common.settings")}
                     </Link>
                   </div>
                 </div>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-9 w-9">
+              <LogOut className="h-[18px] w-[18px]" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-3 pt-2 pb-20 md:px-6 md:pt-6 md:pb-6">
+      <main className="mx-auto w-full max-w-7xl px-4 pt-3 pb-24 md:px-6 md:pt-6 md:pb-6">
         <Calendar />
       </main>
     </div>

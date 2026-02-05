@@ -102,18 +102,33 @@ export function AppointmentPopover({
   const titleId = `appointment-title-${appointment.id}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30 md:bg-background/60 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+
+      {/* Sheet / Dialog */}
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-soft animate-appointment-appear"
+        className={cn(
+          "relative w-full bg-card shadow-[0_-4px_40px_rgba(0,0,0,0.1)] pb-safe",
+          // Mobile: bottom sheet
+          "rounded-t-2xl p-5 pt-3 animate-slide-up",
+          // Desktop: centered dialog
+          "md:max-w-md md:rounded-2xl md:p-6 md:animate-appointment-appear md:shadow-soft md:border md:border-border"
+        )}
       >
+        {/* Mobile drag handle */}
+        <div className="flex justify-center pb-3 md:hidden">
+          <div className="h-1 w-10 rounded-full bg-border" />
+        </div>
+
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h3 id={titleId} className="text-xl font-semibold">{appointment.service.name}</h3>
-            <div className={cn("mt-1 flex items-center gap-1.5 text-sm", statusConfig.className)}>
+            <h3 id={titleId} className="text-xl font-semibold tracking-tight">{appointment.service.name}</h3>
+            <div className={cn("mt-1.5 flex items-center gap-1.5 text-sm", statusConfig.className)}>
               <statusConfig.icon className="h-4 w-4" />
               <span>{statusConfig.label}</span>
             </div>
@@ -123,16 +138,18 @@ export function AppointmentPopover({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8"
+            className="h-9 w-9 -mr-1 -mt-1"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-5 space-y-4">
           <div className="flex items-center gap-3 text-sm">
-            <User className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/60">
+              <User className="h-4 w-4 text-muted-foreground" />
+            </div>
             <div>
               <div className="font-medium">{appointment.client.fullName}</div>
               {appointment.client.phone && (
@@ -142,7 +159,9 @@ export function AppointmentPopover({
           </div>
 
           <div className="flex items-center gap-3 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/60">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </div>
             <div>
               <div className="font-medium">
                 {formatTime(start)} - {formatTime(end)}
@@ -154,7 +173,7 @@ export function AppointmentPopover({
           </div>
 
           {appointment.notes && (
-            <div className="rounded-lg bg-muted/50 p-3 text-sm">
+            <div className="rounded-xl bg-muted/40 p-3.5 text-sm">
               <div className="text-xs font-medium text-muted-foreground mb-1">{t("appointment.notes")}</div>
               <div>{appointment.notes}</div>
             </div>
@@ -162,12 +181,13 @@ export function AppointmentPopover({
         </div>
 
         {appointment.status !== "cancelled" && (
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-5 grid grid-cols-2 md:flex md:flex-wrap gap-2">
             {appointment.status === "hold" && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onStatusChange("confirmed")}
+                className="h-10 md:h-9"
               >
                 <CheckCircle className="h-4 w-4" />
                 {t("common.confirm")}
@@ -178,12 +198,13 @@ export function AppointmentPopover({
                 variant="outline"
                 size="sm"
                 onClick={() => onStatusChange("hold")}
+                className="h-10 md:h-9"
               >
                 <AlertCircle className="h-4 w-4" />
                 {t("appointment.hold")}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={onEdit}>
+            <Button variant="outline" size="sm" onClick={onEdit} className="h-10 md:h-9">
               <Edit className="h-4 w-4" />
               {t("common.edit")}
             </Button>
@@ -191,7 +212,7 @@ export function AppointmentPopover({
               variant="outline"
               size="sm"
               onClick={() => onStatusChange("cancelled")}
-              className="text-status-cancelled hover:text-status-cancelled"
+              className="h-10 md:h-9 text-status-cancelled hover:text-status-cancelled"
             >
               <X className="h-4 w-4" />
               {t("common.cancel")}
@@ -199,12 +220,12 @@ export function AppointmentPopover({
           </div>
         )}
 
-        <div className="mt-4 flex justify-end border-t border-border pt-4">
+        <div className="mt-4 flex justify-end border-t border-border/50 pt-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive h-10 md:h-9"
           >
             <Trash2 className="h-4 w-4" />
             {t("common.delete")}

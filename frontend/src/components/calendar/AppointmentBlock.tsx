@@ -43,9 +43,12 @@ export function AppointmentBlock({
   return (
     <div
       className={cn(
-        "absolute left-1 right-2 cursor-pointer overflow-hidden rounded-xl pointer-events-auto",
-        "border-l-4 bg-[var(--status-bg)] shadow-sm",
-        "transition-all duration-150 hover:shadow-md hover:-translate-y-0.5",
+        "absolute left-0.5 right-1 md:left-1 md:right-2 cursor-pointer overflow-hidden rounded-lg md:rounded-xl pointer-events-auto",
+        "border-l-[3px] md:border-l-4 bg-[var(--status-bg)]",
+        "shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
+        "transition-all duration-150",
+        "hover:shadow-md hover:-translate-y-0.5",
+        "active:scale-[0.98] active:opacity-90",
         "animate-appointment-appear",
         statusClass,
         isDragging && "opacity-50",
@@ -60,19 +63,19 @@ export function AppointmentBlock({
       draggable
       onDragStart={onDragStart}
     >
-      <div className={cn("flex h-full flex-col", compact ? "p-1.5" : "p-2")}>
+      <div className={cn("flex h-full flex-col", compact ? "p-1 md:p-1.5" : "p-1.5 md:p-2")}>
         <div className="flex items-start justify-between gap-1">
           <span
             className={cn(
-              "font-semibold text-foreground truncate",
-              compact ? "text-xs" : "text-sm",
+              "font-semibold text-foreground truncate leading-tight",
+              compact ? "text-[11px]" : "text-xs md:text-sm",
               appointment.status === "cancelled" && "line-through"
             )}
           >
             {appointment.service.name}
           </span>
           {!showDetails && (
-            <span className="text-xs text-muted-foreground flex-shrink-0">
+            <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
               {timeRange}
             </span>
           )}
@@ -80,10 +83,10 @@ export function AppointmentBlock({
 
         {showDetails && (
           <>
-            <span className={cn("text-muted-foreground truncate", compact ? "text-xs" : "text-sm")}>
+            <span className={cn("text-muted-foreground truncate leading-tight", compact ? "text-[10px]" : "text-xs md:text-sm")}>
               {appointment.client.fullName}
             </span>
-            <div className={cn("mt-auto flex items-center justify-between text-muted-foreground", compact ? "text-[10px]" : "text-xs")}>
+            <div className={cn("mt-auto flex items-center justify-between text-muted-foreground", compact ? "text-[9px]" : "text-[11px] md:text-xs")}>
               <span>{timeRange}</span>
               <span>{formatDuration(durationMinutes)}</span>
             </div>

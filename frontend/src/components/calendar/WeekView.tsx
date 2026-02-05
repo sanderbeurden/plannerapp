@@ -40,6 +40,7 @@ export function WeekView({
           appointments={appointments}
           onAppointmentClick={onAppointmentClick}
           onSlotClick={onSlotClick}
+          onDayClick={onDayClick}
           onReschedule={onReschedule}
         />
       </div>
