@@ -201,7 +201,7 @@ export function AppointmentModal({
             <div className="relative">
               <div
                 className={cn(
-                  "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
+                  "flex items-center rounded-lg border border-input bg-background px-3 py-2.5 text-base cursor-pointer",
                   openDropdown === "client" && "ring-2 ring-ring"
                 )}
                 onClick={() => {
@@ -232,7 +232,7 @@ export function AppointmentModal({
                           value={newClientFirstName}
                           onChange={(e) => setNewClientFirstName(capitalizeFirst(e.target.value))}
                           placeholder={t("clients.firstName")}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring"
                           autoFocus
                         />
                         <input
@@ -240,7 +240,7 @@ export function AppointmentModal({
                           value={newClientLastName}
                           onChange={(e) => setNewClientLastName(capitalizeFirst(e.target.value))}
                           placeholder={t("clients.lastName")}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring"
                         />
                       </div>
                       <div className="flex justify-end gap-2">
@@ -279,7 +279,7 @@ export function AppointmentModal({
                             value={clientSearch}
                             onChange={(e) => setClientSearch(e.target.value)}
                             placeholder={t("clients.searchPlaceholder")}
-                            className="flex-1 bg-transparent text-sm outline-none"
+                            className="flex-1 bg-transparent text-base outline-none"
                             autoFocus
                           />
                         </div>
@@ -337,7 +337,7 @@ export function AppointmentModal({
             <div className="relative">
               <div
                 className={cn(
-                  "flex items-center rounded-lg border border-input bg-background px-3 py-2 cursor-pointer",
+                  "flex items-center rounded-lg border border-input bg-background px-3 py-2.5 text-base cursor-pointer",
                   openDropdown === "service" && "ring-2 ring-ring"
                 )}
                 onClick={() => setOpenDropdown(openDropdown === "service" ? null : "service")}
@@ -359,7 +359,7 @@ export function AppointmentModal({
                         value={serviceSearch}
                         onChange={(e) => setServiceSearch(e.target.value)}
                         placeholder={`${t("services.title")}...`}
-                        className="flex-1 bg-transparent text-sm outline-none"
+                        className="flex-1 bg-transparent text-base outline-none"
                         autoFocus
                       />
                     </div>
@@ -423,13 +423,13 @@ export function AppointmentModal({
                   newDate.setFullYear(year, month - 1, day);
                   if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
                 }}
-                className="w-full rounded-lg border border-input bg-background px-3 py-3 text-base outline-none focus:ring-2 focus:ring-ring mb-2"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring"
               />
 
               {/* Start Time - native time picker, great on mobile */}
               <div
                 className={cn(
-                  "grid gap-2",
+                  "grid gap-3 mt-3",
                   selectedService ? "grid-cols-2" : "grid-cols-1"
                 )}
               >
@@ -448,7 +448,7 @@ export function AppointmentModal({
                     }}
                     step="900"
                     className={cn(
-                      "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                      "w-full rounded-lg border bg-background px-3 py-2.5 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
                       hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
                   />
@@ -477,7 +477,7 @@ export function AppointmentModal({
                       }}
                       step="900"
                       className={cn(
-                        "w-full rounded-lg border bg-background px-3 py-3 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                        "w-full rounded-lg border bg-background px-3 py-2.5 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
                         hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                       )}
                     />
@@ -548,7 +548,7 @@ export function AppointmentModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring resize-none"
               placeholder={`${t("appointment.notes")}...`}
             />
           </div>
