@@ -413,20 +413,22 @@ export function AppointmentModal({
             
             {/* Single stacked layout - works great on mobile */}
             <div className="space-y-1">
-              {/* Date */}
-              <input
-                type="date"
-                value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
-                onChange={(e) => {
-                  const [year, month, day] = e.target.value.split("-").map(Number);
-                  const newDate = new Date(startDateTime);
-                  newDate.setFullYear(year, month - 1, day);
-                  if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
-                }}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring"
-              />
+              {/* Date - wrapped in div to match client/service field width */}
+              <div className="rounded-lg border border-input bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring">
+                <input
+                  type="date"
+                  value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
+                  onChange={(e) => {
+                    const [year, month, day] = e.target.value.split("-").map(Number);
+                    const newDate = new Date(startDateTime);
+                    newDate.setFullYear(year, month - 1, day);
+                    if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
+                  }}
+                  className="w-full bg-transparent text-base outline-none"
+                />
+              </div>
 
-              {/* Start Time - native time picker, great on mobile */}
+              {/* Start/End Time */}
               <div
                 className={cn(
                   "grid gap-4 mt-3",
@@ -434,53 +436,58 @@ export function AppointmentModal({
                 )}
               >
                 <div className="relative">
-                  <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
+                  <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
                     {t("appointment.start")}
                   </label>
-                  <input
-                    type="time"
-                    value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
-                    onChange={(e) => {
-                      const [hours, minutes] = e.target.value.split(":").map(Number);
-                      const newTime = new Date(startDateTime);
-                      newTime.setHours(hours, minutes, 0, 0);
-                      if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
-                    }}
-                    step="900"
+                  <div
                     className={cn(
-                      "w-full rounded-lg border bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring",
+                      "rounded-lg border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring",
                       hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
-                  />
+                  >
+                    <input
+                      type="time"
+                      value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":").map(Number);
+                        const newTime = new Date(startDateTime);
+                        newTime.setHours(hours, minutes, 0, 0);
+                        if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
+                      }}
+                      step="900"
+                      className="w-full bg-transparent text-base outline-none"
+                    />
+                  </div>
                 </div>
                 {selectedService && (
                   <div className="relative">
-                    <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground">
+                    <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
                       {t("appointment.end")}
                     </label>
-                    <input
-                      type="time"
-                      value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(":").map(Number);
-                        const newEnd = new Date(startDateTime);
-                        newEnd.setHours(hours, minutes, 0, 0);
-                        const newDuration = Math.round(
-                          (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
-                        );
-                        // Only allow valid durations (minimum 15 min, same day)
-                        if (newDuration >= 15) {
-                          setCustomDuration(newDuration);
-                        }
-                        // If duration would be negative (past midnight) or too short, ignore
-                        // The UI naturally prevents this since end time input is bounded by the day
-                      }}
-                      step="900"
+                    <div
                       className={cn(
-                        "w-full rounded-lg border bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring",
+                        "rounded-lg border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring",
                         hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                       )}
-                    />
+                    >
+                      <input
+                        type="time"
+                        value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(":").map(Number);
+                          const newEnd = new Date(startDateTime);
+                          newEnd.setHours(hours, minutes, 0, 0);
+                          const newDuration = Math.round(
+                            (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
+                          );
+                          if (newDuration >= 15) {
+                            setCustomDuration(newDuration);
+                          }
+                        }}
+                        step="900"
+                        className="w-full bg-transparent text-base outline-none"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

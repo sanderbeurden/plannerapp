@@ -151,23 +151,6 @@
   animation: fade-in 200ms ease-out;
 }
 
-/* Normalize native date/time inputs - hide picker icons that add extra width */
-input[type="date"],
-input[type="time"] {
-  position: relative;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
 /* Safe area insets for notched devices */
 @supports (padding: env(safe-area-inset-bottom)) {
   .pb-safe {
