@@ -54,6 +54,19 @@
   }
 }
 
+@layer base {
+  /* Hide native date/time picker icons — showPicker() handles opening */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: center;
+  }
+}
+
 @layer utilities {
   .scrollbar-hidden {
     scrollbar-width: none;
