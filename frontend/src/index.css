@@ -55,6 +55,14 @@
 }
 
 @layer utilities {
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
   .status-confirmed {
     --status-color: hsl(var(--status-confirmed));
     --status-bg: hsl(var(--status-confirmed-bg));

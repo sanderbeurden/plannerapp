@@ -166,7 +166,7 @@ export function MobileWeekGrid({
       {/* Scrollable time grid */}
       <div
         ref={containerRef}
-        className="relative overflow-auto"
+        className="relative overflow-auto scrollbar-hidden"
         style={{ height: "calc(100dvh - 200px)" }}
       >
         <div className="relative flex pt-3">
