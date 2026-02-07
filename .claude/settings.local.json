@@ -3,7 +3,10 @@
     "allow": [
       "Bash(coderabbit:*)",
       "Bash(bunx tsc:*)",
-      "Bash(bun run tsc:*)"
+      "Bash(bun run tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

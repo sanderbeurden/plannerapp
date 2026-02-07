@@ -15,10 +15,15 @@ export type Settings = {
   language: Language;
 };
 
+function detectLanguage(): Language {
+  const lang = navigator.language.toLowerCase();
+  return lang.startsWith("nl") ? "nl" : "en";
+}
+
 const DEFAULT_SETTINGS: Settings = {
   calendarStartHour: 8,
   calendarEndHour: 23,
-  language: "en",
+  language: detectLanguage(),
 };
 
 const STORAGE_KEY = "plannerapp-settings";

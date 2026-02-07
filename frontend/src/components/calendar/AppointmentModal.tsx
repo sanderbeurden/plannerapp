@@ -429,7 +429,7 @@ export function AppointmentModal({
               {/* Start Time - native time picker, great on mobile */}
               <div
                 className={cn(
-                  "grid gap-3 mt-3",
+                  "grid gap-4 mt-3",
                   selectedService ? "grid-cols-2" : "grid-cols-1"
                 )}
               >
@@ -448,7 +448,7 @@ export function AppointmentModal({
                     }}
                     step="900"
                     className={cn(
-                      "w-full rounded-lg border bg-background px-3 py-2.5 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                      "w-full rounded-lg border bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring",
                       hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
                   />
@@ -477,7 +477,7 @@ export function AppointmentModal({
                       }}
                       step="900"
                       className={cn(
-                        "w-full rounded-lg border bg-background px-3 py-2.5 text-base text-center font-medium outline-none focus:ring-2 focus:ring-ring",
+                        "w-full rounded-lg border bg-background px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring",
                         hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                       )}
                     />
