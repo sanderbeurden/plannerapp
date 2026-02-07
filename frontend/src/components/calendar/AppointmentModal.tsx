@@ -435,59 +435,55 @@ export function AppointmentModal({
                   selectedService ? "grid-cols-2" : "grid-cols-1"
                 )}
               >
-                <div className="relative">
-                  <label className="absolute -top-1.5 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
+                <div
+                  className={cn(
+                    "rounded-lg border bg-background px-3 pt-1.5 pb-2 focus-within:ring-2 focus-within:ring-ring",
+                    hasOverlap ? "border-red-300 bg-red-50" : "border-input"
+                  )}
+                >
+                  <label className="text-[10px] text-muted-foreground">
                     {t("appointment.start")}
                   </label>
+                  <input
+                    type="time"
+                    value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(":").map(Number);
+                      const newTime = new Date(startDateTime);
+                      newTime.setHours(hours, minutes, 0, 0);
+                      if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
+                    }}
+                    step="900"
+                    className="w-full bg-transparent text-base outline-none"
+                  />
+                </div>
+                {selectedService && (
                   <div
                     className={cn(
-                      "rounded-lg border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring",
+                      "rounded-lg border bg-background px-3 pt-1.5 pb-2 focus-within:ring-2 focus-within:ring-ring",
                       hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
                   >
-                    <input
-                      type="time"
-                      value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(":").map(Number);
-                        const newTime = new Date(startDateTime);
-                        newTime.setHours(hours, minutes, 0, 0);
-                        if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
-                      }}
-                      step="900"
-                      className="w-full bg-transparent text-base outline-none"
-                    />
-                  </div>
-                </div>
-                {selectedService && (
-                  <div className="relative">
-                    <label className="absolute -top-1.5 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
+                    <label className="text-[10px] text-muted-foreground">
                       {t("appointment.end")}
                     </label>
-                    <div
-                      className={cn(
-                        "rounded-lg border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring",
-                        hasOverlap ? "border-red-300 bg-red-50" : "border-input"
-                      )}
-                    >
-                      <input
-                        type="time"
-                        value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
-                        onChange={(e) => {
-                          const [hours, minutes] = e.target.value.split(":").map(Number);
-                          const newEnd = new Date(startDateTime);
-                          newEnd.setHours(hours, minutes, 0, 0);
-                          const newDuration = Math.round(
-                            (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
-                          );
-                          if (newDuration >= 15) {
-                            setCustomDuration(newDuration);
-                          }
+                    <input
+                      type="time"
+                      value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":").map(Number);
+                        const newEnd = new Date(startDateTime);
+                        newEnd.setHours(hours, minutes, 0, 0);
+                        const newDuration = Math.round(
+                          (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
+                        );
+                        if (newDuration >= 15) {
+                          setCustomDuration(newDuration);
+                        }
                         }}
                         step="900"
                         className="w-full bg-transparent text-base outline-none"
-                      />
-                    </div>
+                    />
                   </div>
                 )}
               </div>
