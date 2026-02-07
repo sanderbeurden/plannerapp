@@ -168,12 +168,12 @@ export function AppointmentModal({
   // Check for overlaps with existing appointments (full interval)
   const hasOverlap = selectedService
     ? existingAppointments.some((apt) => {
-        if (apt.id === appointment?.id) return false;
-        if (apt.status === "cancelled") return false;
-        const aptStart = new Date(apt.startUtc);
-        const aptEnd = new Date(apt.endUtc);
-        return startDateTime < aptEnd && endDateTime > aptStart;
-      })
+      if (apt.id === appointment?.id) return false;
+      if (apt.status === "cancelled") return false;
+      const aptStart = new Date(apt.startUtc);
+      const aptEnd = new Date(apt.endUtc);
+      return startDateTime < aptEnd && endDateTime > aptStart;
+    })
     : false;
 
   return (
@@ -384,21 +384,21 @@ export function AppointmentModal({
                             }}
                           >
                             <span>{service.name}</span>
-                        <span className="text-muted-foreground">
-                          {service.durationMinutes} {t("services.minutes")}
-                        </span>
+                            <span className="text-muted-foreground">
+                              {service.durationMinutes} {t("services.minutes")}
+                            </span>
                           </button>
                         ))}
-                            {filteredServices.length === 0 && !serviceSearch && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">
-                                {t("services.noServicesInline")}
-                              </div>
-                            )}
-                            {filteredServices.length === 0 && serviceSearch && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">
-                                {t("services.noMatching")}
-                              </div>
-                            )}
+                        {filteredServices.length === 0 && !serviceSearch && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            {t("services.noServicesInline")}
+                          </div>
+                        )}
+                        {filteredServices.length === 0 && serviceSearch && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            {t("services.noMatching")}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -410,9 +410,9 @@ export function AppointmentModal({
           {/* When - Mobile-first minimal design */}
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("appointment.time")}</label>
-            
+
             {/* Single stacked layout - works great on mobile */}
-            <div>
+            <div className="space-y-3">
               {/* Date - wrapped in div to match client/service field width */}
               <div className="rounded-lg border border-input bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring">
                 <input
