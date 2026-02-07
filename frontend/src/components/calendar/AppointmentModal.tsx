@@ -431,12 +431,12 @@ export function AppointmentModal({
               {/* Start/End Time */}
               <div
                 className={cn(
-                  "grid gap-2 mt-2",
+                  "grid gap-1",
                   selectedService ? "grid-cols-2" : "grid-cols-1"
                 )}
               >
                 <div className="relative">
-                  <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
+                  <label className="absolute -top-1.5 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
                     {t("appointment.start")}
                   </label>
                   <div
@@ -461,7 +461,7 @@ export function AppointmentModal({
                 </div>
                 {selectedService && (
                   <div className="relative">
-                    <label className="absolute -top-2 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
+                    <label className="absolute -top-1.5 left-2 bg-background px-1 text-[10px] text-muted-foreground z-10">
                       {t("appointment.end")}
                     </label>
                     <div
