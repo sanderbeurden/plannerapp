@@ -431,7 +431,7 @@ export function AppointmentModal({
               {/* Start/End Time */}
               <div
                 className={cn(
-                  "grid gap-4 mt-3",
+                  "grid gap-2 mt-2",
                   selectedService ? "grid-cols-2" : "grid-cols-1"
                 )}
               >
