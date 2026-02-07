@@ -178,30 +178,30 @@ export function AppointmentModal({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-auto p-0 animate-appointment-appear">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-3">
-          <DialogTitle>
+      <DialogContent className="max-h-[85vh] overflow-auto p-0 animate-appointment-appear md:max-w-sm">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-2.5">
+          <DialogTitle className="text-base">
             {mode === "create" ? t("appointment.newAppointment") : t("appointment.editAppointment")}
           </DialogTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="px-4 py-3 space-y-2.5">
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            <div className="rounded-md bg-red-50 border border-red-200 p-2 text-xs text-red-700">
               {error}
             </div>
           )}
 
           {/* Client Selection */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">{t("appointment.client")}</label>
+          <div className="space-y-0.5">
+            <label className="text-xs font-medium">{t("appointment.client")}</label>
             <div className="relative">
               <div
                 className={cn(
-                  "flex items-center rounded-lg border border-input bg-background px-3 py-2.5 text-base cursor-pointer",
+                  "flex items-center rounded-md border border-input bg-background px-2.5 py-1.5 text-sm cursor-pointer",
                   openDropdown === "client" && "ring-2 ring-ring"
                 )}
                 onClick={() => {
@@ -332,12 +332,12 @@ export function AppointmentModal({
           </div>
 
           {/* Service Selection */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">{t("appointment.service")}</label>
+          <div className="space-y-0.5">
+            <label className="text-xs font-medium">{t("appointment.service")}</label>
             <div className="relative">
               <div
                 className={cn(
-                  "flex items-center rounded-lg border border-input bg-background px-3 py-2.5 text-base cursor-pointer",
+                  "flex items-center rounded-md border border-input bg-background px-2.5 py-1.5 text-sm cursor-pointer",
                   openDropdown === "service" && "ring-2 ring-ring"
                 )}
                 onClick={() => setOpenDropdown(openDropdown === "service" ? null : "service")}
@@ -407,45 +407,42 @@ export function AppointmentModal({
             </div>
           </div>
 
-          {/* When - Mobile-first minimal design */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">{t("appointment.time")}</label>
+          {/* When */}
+          <div className="space-y-0.5">
+            <label className="text-xs font-medium">{t("appointment.time")}</label>
+            <div className="rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring cursor-pointer">
+              <input
+                type="date"
+                onClick={(e) => e.currentTarget.showPicker()}
+                value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [year, month, day] = e.target.value.split("-").map(Number);
+                  const newDate = new Date(startDateTime);
+                  newDate.setFullYear(year, month - 1, day);
+                  if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
+                }}
+                className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
+              />
+            </div>
 
-            {/* Single stacked layout - works great on mobile */}
-            <div className="space-y-3">
-              {/* Date - wrapped in div to match client/service field width */}
-              <div className="rounded-lg border border-input bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring">
-                <input
-                  type="date"
-                  value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
-                  onChange={(e) => {
-                    const [year, month, day] = e.target.value.split("-").map(Number);
-                    const newDate = new Date(startDateTime);
-                    newDate.setFullYear(year, month - 1, day);
-                    if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
-                  }}
-                  className="w-full bg-transparent text-base outline-none"
-                />
-              </div>
-
-              {/* Start/End Time */}
-              <div
-                className={cn(
-                  "grid gap-1",
-                  selectedService ? "grid-cols-2" : "grid-cols-1"
-                )}
-              >
+            {/* Start/End Time */}
+            <div
+              className={cn(
+                "grid gap-1.5 pt-1.5",
+                selectedService ? "grid-cols-2" : "grid-cols-1"
+              )}
+            >
+              <div className="space-y-0.5">
+                <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.start")}</label>
                 <div
                   className={cn(
-                    "rounded-lg border bg-background px-3 pt-1.5 pb-2 focus-within:ring-2 focus-within:ring-ring",
+                    "rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring",
                     hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                   )}
                 >
-                  <label className="text-[10px] text-muted-foreground">
-                    {t("appointment.start")}
-                  </label>
                   <input
                     type="time"
+                    onClick={(e) => e.currentTarget.showPicker()}
                     value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
                     onChange={(e) => {
                       const [hours, minutes] = e.target.value.split(":").map(Number);
@@ -454,21 +451,22 @@ export function AppointmentModal({
                       if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
                     }}
                     step="900"
-                    className="w-full bg-transparent text-base outline-none"
+                    className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
                   />
                 </div>
-                {selectedService && (
+              </div>
+              {selectedService && (
+                <div className="space-y-0.5">
+                  <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.end")}</label>
                   <div
                     className={cn(
-                      "rounded-lg border bg-background px-3 pt-1.5 pb-2 focus-within:ring-2 focus-within:ring-ring",
+                      "rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring",
                       hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                     )}
                   >
-                    <label className="text-[10px] text-muted-foreground">
-                      {t("appointment.end")}
-                    </label>
                     <input
                       type="time"
+                      onClick={(e) => e.currentTarget.showPicker()}
                       value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
                       onChange={(e) => {
                         const [hours, minutes] = e.target.value.split(":").map(Number);
@@ -480,55 +478,49 @@ export function AppointmentModal({
                         if (newDuration >= 15) {
                           setCustomDuration(newDuration);
                         }
-                        }}
-                        step="900"
-                        className="w-full bg-transparent text-base outline-none"
+                      }}
+                      step="900"
+                      className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
                     />
                   </div>
-                )}
-              </div>
-
-              {selectedService && (
-                <>
-                  {/* Duration display + quick adjust */}
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-sm text-muted-foreground">
-                      {t("appointment.duration")}:{" "}
-                      <span className="font-medium text-foreground">
-                        {customDuration} {t("services.minutes")}
-                      </span>
-                      {customDuration !== selectedService.durationMinutes && (
-                        <button
-                          type="button"
-                          onClick={() => setCustomDuration(selectedService.durationMinutes)}
-                          className="ml-2 text-xs underline hover:text-foreground"
-                        >
-                          {t("appointment.resetDuration")}
-                        </button>
-                      )}
-                    </span>
-                    {hasOverlap && (
-                      <span className="text-sm text-red-600 font-medium">
-                        {t("appointment.overlapsShort")}
-                      </span>
-                    )}
-                  </div>
-                </>
+                </div>
               )}
             </div>
+
+            {selectedService && (
+              <div className="flex items-center justify-between pt-0.5 px-0.5">
+                <span className="text-xs text-muted-foreground">
+                  {customDuration} {t("services.minutes")}
+                  {customDuration !== selectedService.durationMinutes && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomDuration(selectedService.durationMinutes)}
+                      className="ml-1.5 text-[10px] underline hover:text-foreground"
+                    >
+                      {t("appointment.resetDuration")}
+                    </button>
+                  )}
+                </span>
+                {hasOverlap && (
+                  <span className="text-xs text-red-600 font-medium">
+                    {t("appointment.overlapsShort")}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Status (edit only) */}
           {mode === "edit" && (
-            <div className="space-y-1">
-              <label className="text-sm font-medium">{t("appointment.status")}</label>
-              <div className="flex gap-2">
+            <div className="space-y-0.5">
+              <label className="text-xs font-medium">{t("appointment.status")}</label>
+              <div className="flex gap-1.5">
                 {(["confirmed", "hold"] as const).map((s) => (
                   <button
                     key={s}
                     type="button"
                     className={cn(
-                      "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                      "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
                       status === s
                         ? s === "confirmed"
                           ? "border-status-confirmed bg-status-confirmed-bg text-status-confirmed"
@@ -545,24 +537,24 @@ export function AppointmentModal({
           )}
 
           {/* Notes */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">{t("appointment.notes")} ({t("common.optional")})</label>
+          <div className="space-y-0.5">
+            <label className="text-xs font-medium">{t("appointment.notes")} ({t("common.optional")})</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring resize-none"
+              rows={2}
+              className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
               placeholder={`${t("appointment.notes")}...`}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {mode === "create" ? t("appointment.schedule") : t("common.save")}
             </Button>
           </div>
