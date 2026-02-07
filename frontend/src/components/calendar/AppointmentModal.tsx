@@ -412,7 +412,7 @@ export function AppointmentModal({
             <label className="text-sm font-medium">{t("appointment.time")}</label>
             
             {/* Single stacked layout - works great on mobile */}
-            <div className="space-y-1">
+            <div>
               {/* Date - wrapped in div to match client/service field width */}
               <div className="rounded-lg border border-input bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-ring">
                 <input
