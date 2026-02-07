@@ -56,6 +56,11 @@
 
 @layer base {
   /* Hide native date/time picker icons — showPicker() handles opening */
+  input[type="date"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator {
     display: none;
@@ -64,6 +69,8 @@
   input[type="date"]::-webkit-date-and-time-value,
   input[type="time"]::-webkit-date-and-time-value {
     text-align: center;
+    margin: 0;
+    padding: 0;
   }
 }
 
