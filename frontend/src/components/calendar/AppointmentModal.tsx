@@ -421,7 +421,7 @@ export function AppointmentModal({
                   newDate.setFullYear(year, month - 1, day);
                   if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
                 }}
-                className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
+                className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
               />
             </div>
 
@@ -451,7 +451,7 @@ export function AppointmentModal({
                       if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
                     }}
                     step="900"
-                    className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
+                    className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
                   />
                 </div>
               </div>
@@ -480,7 +480,7 @@ export function AppointmentModal({
                         }
                       }}
                       step="900"
-                      className="w-full bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-pointer"
+                      className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
                     />
                   </div>
                 </div>
