@@ -10,7 +10,7 @@ import { MiniCalendar } from "./MiniCalendar";
 import { AppointmentModal } from "./AppointmentModal";
 import { AppointmentPopover } from "./AppointmentPopover";
 import { useTranslation } from "@/lib/i18n";
-import type { AppointmentWithDetails, AppointmentStatus } from "@/types";
+import type { AppointmentWithDetails, AppointmentStatus, RecurrencePattern } from "@/types";
 
 export function Calendar() {
   const { t } = useTranslation();
@@ -20,6 +20,7 @@ export function Calendar() {
     appointments,
     loading,
     createAppointment,
+    previewRecurrence,
     updateAppointment,
     deleteAppointment,
   } = useAppointments(from, to);
@@ -67,6 +68,8 @@ export function Calendar() {
       endUtc: string;
       status: AppointmentStatus;
       notes?: string;
+      recurrence?: { pattern: RecurrencePattern; count: number };
+      excludeDates?: string[];
     }) => {
       if (calendarState.modalMode === "create") {
         const result = await createAppointment(data);
@@ -74,7 +77,7 @@ export function Calendar() {
       } else if (calendarState.selectedAppointment) {
         const result = await updateAppointment(
           calendarState.selectedAppointment.id,
-          data
+          { ...data, scope: calendarState.editScope }
         );
         return result !== null;
       }
@@ -83,9 +86,25 @@ export function Calendar() {
     [
       calendarState.modalMode,
       calendarState.selectedAppointment,
+      calendarState.editScope,
       createAppointment,
       updateAppointment,
     ]
+  );
+
+  const handlePreviewRecurrence = useCallback(
+    async (data: {
+      clientId: string;
+      serviceId: string;
+      startUtc: string;
+      endUtc: string;
+      status: AppointmentStatus;
+      notes?: string;
+      recurrence: { pattern: RecurrencePattern; count: number };
+    }) => {
+      return previewRecurrence(data);
+    },
+    [previewRecurrence]
   );
 
   const handleStatusChange = useCallback(
@@ -103,15 +122,10 @@ export function Calendar() {
     [popoverAppointment, updateAppointment]
   );
 
-  const handleDeleteAppointment = useCallback(async () => {
+  const handleDeleteAppointment = useCallback(async (scope?: "single" | "future") => {
     if (popoverAppointment) {
-      const confirmed = window.confirm(
-        t("appointment.deleteConfirmName", { name: popoverAppointment.client.fullName })
-      );
-      if (confirmed) {
-        await deleteAppointment(popoverAppointment.id);
-        setPopoverAppointment(null);
-      }
+      await deleteAppointment(popoverAppointment.id, scope);
+      setPopoverAppointment(null);
     }
   }, [popoverAppointment, deleteAppointment]);
 
@@ -173,6 +187,7 @@ export function Calendar() {
           existingAppointments={appointments}
           onClose={calendarState.closeModal}
           onSave={handleSaveAppointment}
+          onPreviewRecurrence={handlePreviewRecurrence}
         />
       )}
 
@@ -180,8 +195,8 @@ export function Calendar() {
         <AppointmentPopover
           appointment={popoverAppointment}
           onClose={() => setPopoverAppointment(null)}
-          onEdit={() => {
-            calendarState.openEditModal(popoverAppointment);
+          onEdit={(scope) => {
+            calendarState.openEditModal(popoverAppointment, scope);
             setPopoverAppointment(null);
           }}
           onDelete={handleDeleteAppointment}

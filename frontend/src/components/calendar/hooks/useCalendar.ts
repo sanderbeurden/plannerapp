@@ -15,6 +15,7 @@ export type CalendarState = {
   modalMode: "create" | "edit";
   selectedAppointment: AppointmentWithDetails | null;
   selectedTimeSlot: { start: Date; end: Date } | null;
+  editScope: "single" | "future" | undefined;
 };
 
 export type CalendarActions = {
@@ -24,7 +25,7 @@ export type CalendarActions = {
   goToPrevious: () => void;
   goToNext: () => void;
   openCreateModal: (timeSlot?: { start: Date; end: Date }) => void;
-  openEditModal: (appointment: AppointmentWithDetails) => void;
+  openEditModal: (appointment: AppointmentWithDetails, scope?: "single" | "future") => void;
   closeModal: () => void;
   getDateRange: () => { from: Date; to: Date };
 };
@@ -44,6 +45,7 @@ export function useCalendarState(): CalendarContextValue {
     start: Date;
     end: Date;
   } | null>(null);
+  const [editScope, setEditScope] = useState<"single" | "future" | undefined>(undefined);
 
   const goToToday = useCallback(() => {
     setSelectedDate(new Date());
@@ -77,10 +79,11 @@ export function useCalendarState(): CalendarContextValue {
     []
   );
 
-  const openEditModal = useCallback((appointment: AppointmentWithDetails) => {
+  const openEditModal = useCallback((appointment: AppointmentWithDetails, scope?: "single" | "future") => {
     setModalMode("edit");
     setSelectedAppointment(appointment);
     setSelectedTimeSlot(null);
+    setEditScope(scope);
     setModalOpen(true);
   }, []);
 
@@ -88,6 +91,7 @@ export function useCalendarState(): CalendarContextValue {
     setModalOpen(false);
     setSelectedAppointment(null);
     setSelectedTimeSlot(null);
+    setEditScope(undefined);
   }, []);
 
   const getDateRange = useCallback(() => {
@@ -111,6 +115,7 @@ export function useCalendarState(): CalendarContextValue {
       modalMode,
       selectedAppointment,
       selectedTimeSlot,
+      editScope,
       setSelectedDate,
       setView,
       goToToday,
@@ -128,6 +133,7 @@ export function useCalendarState(): CalendarContextValue {
       modalMode,
       selectedAppointment,
       selectedTimeSlot,
+      editScope,
       goToToday,
       goToPrevious,
       goToNext,

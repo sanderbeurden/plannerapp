@@ -44,6 +44,11 @@ function parseAppointmentStatus(value: string): AppointmentStatus {
   throw new Error(`Invalid appointment status: ${value}`);
 }
 
+export type RecurrenceRule = {
+  pattern: "weekly" | "biweekly" | "monthly";
+  count: number;
+};
+
 export type Appointment = {
   id: string;
   clientId: string;
@@ -52,6 +57,8 @@ export type Appointment = {
   endUtc: string;
   status: AppointmentStatus;
   notes: string | null;
+  recurrenceGroupId: string | null;
+  recurrenceRule: RecurrenceRule | null;
   createdAt: string;
 };
 
@@ -82,6 +89,8 @@ type DbAppointmentRow = {
   end_time: string;
   status: string;
   notes: string | null;
+  recurrence_group_id: string | null;
+  recurrence_rule: string | null;
   created_at: string;
 };
 
@@ -112,6 +121,14 @@ export function mapService(row: DbServiceRow): Service {
 }
 
 export function mapAppointment(row: DbAppointmentRow): Appointment {
+  let recurrenceRule: RecurrenceRule | null = null;
+  if (row.recurrence_rule) {
+    try {
+      recurrenceRule = JSON.parse(row.recurrence_rule) as RecurrenceRule;
+    } catch {
+      recurrenceRule = null;
+    }
+  }
   return {
     id: row.id,
     clientId: row.client_id,
@@ -120,6 +137,8 @@ export function mapAppointment(row: DbAppointmentRow): Appointment {
     endUtc: row.end_time,
     status: parseAppointmentStatus(row.status),
     notes: row.notes,
+    recurrenceGroupId: row.recurrence_group_id,
+    recurrenceRule,
     createdAt: row.created_at,
   };
 }

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Clock, User, X, Edit, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Clock, User, X, Edit, Trash2, CheckCircle, AlertCircle, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -9,8 +9,8 @@ import { formatTime, formatDateLocalized, formatDuration, getDurationMinutes } f
 type AppointmentPopoverProps = {
   appointment: AppointmentWithDetails;
   onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit: (scope?: "single" | "future") => void;
+  onDelete: (scope?: "single" | "future") => void;
   onStatusChange: (status: AppointmentStatus) => void;
 };
 
@@ -25,6 +25,9 @@ export function AppointmentPopover({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { t, monthNames } = useTranslation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditScope, setShowEditScope] = useState(false);
+  const isRecurring = !!appointment.recurrenceGroupId;
 
   useEffect(() => {
     // Store the previously focused element
@@ -132,6 +135,12 @@ export function AppointmentPopover({
               <statusConfig.icon className="h-4 w-4" />
               <span>{statusConfig.label}</span>
             </div>
+            {isRecurring && (
+              <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <Repeat className="h-3 w-3" />
+                <span>{t("appointment.repeat")}</span>
+              </div>
+            )}
           </div>
           <Button
             ref={closeButtonRef}
@@ -204,7 +213,10 @@ export function AppointmentPopover({
                 {t("appointment.hold")}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={onEdit} className="h-10 md:h-9">
+            <Button variant="outline" size="sm" onClick={() => {
+              if (isRecurring) setShowEditScope(true);
+              else onEdit();
+            }} className="h-10 md:h-9">
               <Edit className="h-4 w-4" />
               {t("common.edit")}
             </Button>
@@ -220,17 +232,79 @@ export function AppointmentPopover({
           </div>
         )}
 
-        <div className="mt-4 flex justify-end border-t border-border/50 pt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="text-destructive hover:text-destructive h-10 md:h-9"
-          >
-            <Trash2 className="h-4 w-4" />
-            {t("common.delete")}
-          </Button>
-        </div>
+        {/* Edit scope dialog for recurring */}
+        {showEditScope && (
+          <div className="mt-4 border-t border-border/50 pt-4 space-y-3">
+            <p className="text-sm font-medium">{t("appointment.editRecurringTitle")}</p>
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" size="sm" onClick={() => onEdit("single")} className="h-10 md:h-9 justify-start">
+                {t("appointment.editSingle")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onEdit("future")} className="h-10 md:h-9 justify-start">
+                {t("appointment.editFuture")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowEditScope(false)} className="h-10 md:h-9">
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete section */}
+        {!showEditScope && (
+          <div className="mt-4 border-t border-border/50 pt-4">
+            {showDeleteConfirm ? (
+              <div className="space-y-3">
+                {isRecurring ? (
+                  <>
+                    <p className="text-sm font-medium">{t("appointment.deleteRecurringTitle")}</p>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="destructive" size="sm" onClick={() => onDelete("single")} className="h-10 md:h-9 justify-start">
+                        <Trash2 className="h-4 w-4" />
+                        {t("appointment.deleteSingle")}
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => onDelete("future")} className="h-10 md:h-9 justify-start">
+                        <Trash2 className="h-4 w-4" />
+                        {t("appointment.deleteFuture")}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)} className="h-10 md:h-9">
+                        {t("common.cancel")}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium">
+                      {t("appointment.deleteConfirmName", { name: appointment.client.fullName })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t("appointment.deleteWarning")}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)} className="h-10 md:h-9">
+                        {t("common.cancel")}
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => onDelete()} className="h-10 md:h-9">
+                        <Trash2 className="h-4 w-4" />
+                        {t("common.delete")}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-destructive hover:text-destructive h-10 md:h-9"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t("common.delete")}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

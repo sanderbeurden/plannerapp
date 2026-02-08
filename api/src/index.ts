@@ -19,6 +19,7 @@ import {
   mapAppointment,
   mapClient,
   mapService,
+  type Appointment,
   type AppBindings,
   type AppointmentStatus,
 } from "./models";
@@ -703,6 +704,7 @@ app.get("/api/appointments", c => {
         a.end_time,
         a.status,
         a.notes,
+        a.recurrence_group_id,
         a.created_at,
         c.id as client_id_join,
         c.first_name as client_first_name,
@@ -742,6 +744,7 @@ app.get("/api/appointments", c => {
       service_duration_minutes: number;
       service_price_cents: number | null;
       service_created_at: string;
+      recurrence_group_id: string | null;
     }>;
 
   const appointments = rows.map(row => ({
@@ -752,6 +755,7 @@ app.get("/api/appointments", c => {
     endUtc: row.end_time,
     status: row.status as AppointmentStatus,
     notes: row.notes,
+    recurrenceGroupId: row.recurrence_group_id,
     createdAt: row.created_at,
     client: {
       id: row.client_id,
@@ -775,6 +779,30 @@ app.get("/api/appointments", c => {
   return jsonOk(c, appointments);
 });
 
+function generateRecurrenceDates(
+  startDate: Date,
+  endDate: Date,
+  pattern: "weekly" | "biweekly" | "monthly",
+  count: number
+): Array<{ start: Date; end: Date }> {
+  const dates: Array<{ start: Date; end: Date }> = [];
+  const durationMs = endDate.getTime() - startDate.getTime();
+
+  for (let i = 0; i < count; i++) {
+    const start = new Date(startDate);
+    if (pattern === "weekly") {
+      start.setDate(start.getDate() + i * 7);
+    } else if (pattern === "biweekly") {
+      start.setDate(start.getDate() + i * 14);
+    } else {
+      start.setMonth(start.getMonth() + i);
+    }
+    dates.push({ start, end: new Date(start.getTime() + durationMs) });
+  }
+
+  return dates;
+}
+
 app.post("/api/appointments", async c => {
   const user = c.get("user");
   const body = await c.req.json().catch(() => null);
@@ -785,6 +813,11 @@ app.post("/api/appointments", async c => {
   const notes = getOptionalString(body?.notes);
   const statusInput = getOptionalString(body?.status);
   const status = (statusInput ?? "confirmed") as AppointmentStatus;
+
+  // Recurrence fields
+  const recurrence = body?.recurrence as { pattern?: string; count?: number } | undefined;
+  const excludeDates = (body?.excludeDates ?? []) as string[];
+  const dryRun = body?.dryRun === true;
 
   if (!clientId || !serviceId || !startUtc || !endUtc) {
     return jsonError(
@@ -832,6 +865,72 @@ app.post("/api/appointments", async c => {
     return jsonError(c, "Service not found.", 404, "SERVICE_NOT_FOUND");
   }
 
+  // Handle recurring appointments
+  if (recurrence?.pattern && recurrence?.count) {
+    const pattern = recurrence.pattern as "weekly" | "biweekly" | "monthly";
+    if (!["weekly", "biweekly", "monthly"].includes(pattern)) {
+      return jsonError(c, "Invalid recurrence pattern.", 400, "RECURRENCE_INVALID_PATTERN");
+    }
+    const count = Math.min(Math.max(1, recurrence.count), 52);
+
+    const dates = generateRecurrenceDates(
+      new Date(startIso),
+      new Date(endIso),
+      pattern,
+      count
+    );
+
+    const excludeSet = new Set(excludeDates);
+
+    // Check overlaps for all dates
+    const occurrences = dates.map(({ start, end }) => {
+      const sIso = start.toISOString();
+      const eIso = end.toISOString();
+      const overlap = db
+        .query(
+          "SELECT id FROM appointments WHERE user_id = ? AND start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
+        )
+        .get(user.id, eIso, sIso);
+      return {
+        startUtc: sIso,
+        endUtc: eIso,
+        hasConflict: !!overlap,
+        excluded: excludeSet.has(sIso),
+      };
+    });
+
+    if (dryRun) {
+      return jsonOk(c, { occurrences });
+    }
+
+    // Create appointments for non-excluded, non-conflicting dates
+    const groupId = crypto.randomUUID();
+    const ruleJson = JSON.stringify({ pattern, count });
+    const created: Appointment[] = [];
+
+    for (let i = 0; i < occurrences.length; i++) {
+      const occ = occurrences[i];
+      if (occ.excluded) continue;
+
+      const id = crypto.randomUUID();
+      db.query(
+        "INSERT INTO appointments (id, user_id, client_id, service_id, start_time, end_time, status, notes, recurrence_group_id, recurrence_rule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(
+        id, user.id, clientId, serviceId,
+        occ.startUtc, occ.endUtc, status, notes ?? null,
+        groupId, i === 0 ? ruleJson : null
+      );
+
+      const row = db
+        .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+        .get(id, user.id) as Parameters<typeof mapAppointment>[0];
+      created.push(mapAppointment(row));
+    }
+
+    return jsonCreated(c, created);
+  }
+
+  // Single appointment (existing logic)
   const overlap = db
     .query(
       "SELECT id FROM appointments WHERE user_id = ? AND start_time < ? AND end_time > ? AND status != 'cancelled' LIMIT 1"
@@ -932,10 +1031,43 @@ app.put("/api/appointments/:id", async c => {
   }
 
   const notes = notesInput === undefined ? existing.notes : notesInput;
+  const scope = getOptionalString(body?.scope) ?? "single";
+
+  if (scope === "future" && existing.recurrence_group_id) {
+    // Update this and all future appointments in the group
+    const futureRows = db
+      .query(
+        "SELECT id, start_time, end_time FROM appointments WHERE user_id = ? AND recurrence_group_id = ? AND start_time >= ? ORDER BY start_time ASC"
+      )
+      .all(user.id, existing.recurrence_group_id, existing.start_time) as Array<{ id: string; start_time: string; end_time: string }>;
+
+    const originalStart = new Date(existing.start_time);
+    const originalEnd = new Date(existing.end_time);
+    const newStart = new Date(startIso);
+    const newEnd = new Date(endIso);
+    const startDiffMs = newStart.getTime() - originalStart.getTime();
+    const newDurationMs = newEnd.getTime() - newStart.getTime();
+
+    for (const futureRow of futureRows) {
+      const fStart = new Date(new Date(futureRow.start_time).getTime() + startDiffMs);
+      const fEnd = new Date(fStart.getTime() + newDurationMs);
+      db.query(
+        "UPDATE appointments SET client_id = ?, service_id = ?, start_time = ?, end_time = ?, status = ?, notes = ? WHERE id = ? AND user_id = ?"
+      ).run(clientId, serviceId, fStart.toISOString(), fEnd.toISOString(), status, notes, futureRow.id, user.id);
+    }
+
+    const row = db
+      .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+      .get(id, user.id) as Parameters<typeof mapAppointment>[0];
+    return jsonOk(c, mapAppointment(row));
+  }
+
+  // Single edit — detach from recurrence group
+  const newRecurrenceGroupId = scope === "single" && existing.recurrence_group_id ? null : existing.recurrence_group_id;
 
   db.query(
-    "UPDATE appointments SET client_id = ?, service_id = ?, start_time = ?, end_time = ?, status = ?, notes = ? WHERE id = ? AND user_id = ?"
-  ).run(clientId, serviceId, startIso, endIso, status, notes, id, user.id);
+    "UPDATE appointments SET client_id = ?, service_id = ?, start_time = ?, end_time = ?, status = ?, notes = ?, recurrence_group_id = ?, recurrence_rule = ? WHERE id = ? AND user_id = ?"
+  ).run(clientId, serviceId, startIso, endIso, status, notes, newRecurrenceGroupId, null, id, user.id);
 
   const row = db
     .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
@@ -946,12 +1078,23 @@ app.put("/api/appointments/:id", async c => {
 app.delete("/api/appointments/:id", c => {
   const user = c.get("user");
   const id = c.req.param("id");
-  const result = db
-    .query("DELETE FROM appointments WHERE id = ? AND user_id = ?")
-    .run(id, user.id);
-  if (result.changes === 0) {
+  const scope = c.req.query("scope") ?? "single";
+
+  const existing = db
+    .query("SELECT * FROM appointments WHERE id = ? AND user_id = ?")
+    .get(id, user.id) as Parameters<typeof mapAppointment>[0] | null;
+  if (!existing) {
     return jsonError(c, "Appointment not found.", 404, "APPOINTMENT_NOT_FOUND");
   }
+
+  if (scope === "future" && existing.recurrence_group_id) {
+    db.query(
+      "DELETE FROM appointments WHERE user_id = ? AND recurrence_group_id = ? AND start_time >= ?"
+    ).run(user.id, existing.recurrence_group_id, existing.start_time);
+  } else {
+    db.query("DELETE FROM appointments WHERE id = ? AND user_id = ?").run(id, user.id);
+  }
+
   return jsonOk(c, { ok: true });
 });
 

@@ -19,6 +19,7 @@ export function Settings() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleExport = async (endpoint: string, filename: string) => {
     setExportMessage("");
@@ -49,8 +50,10 @@ export function Settings() {
       return;
     }
 
-    const confirmed = window.confirm(t("settings.deleteConfirm"));
-    if (!confirmed) return;
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
 
     setDeleting(true);
     try {
@@ -217,18 +220,36 @@ export function Settings() {
                 placeholder="••••••••"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="destructive"
-                onClick={handleDeleteAccount}
-                disabled={deleting}
-              >
-                {deleting ? `${t("common.delete")}...` : t("settings.deleteAccount")}
-              </Button>
-              {deleteMessage && (
-                <p className="text-sm text-red-600">{deleteMessage}</p>
-              )}
-            </div>
+            {showDeleteConfirm && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-3 space-y-2">
+                <p className="text-sm font-medium text-red-700">{t("settings.deleteConfirm")}</p>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                    {t("common.cancel")}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={deleting}>
+                    {deleting ? `${t("common.delete")}...` : t("common.confirm")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {!showDeleteConfirm && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {t("settings.deleteAccount")}
+                </Button>
+                {deleteMessage && (
+                  <p className="text-sm text-red-600">{deleteMessage}</p>
+                )}
+              </div>
+            )}
+            {deleteMessage && showDeleteConfirm && (
+              <p className="text-sm text-red-600">{deleteMessage}</p>
+            )}
           </div>
 
         </div>

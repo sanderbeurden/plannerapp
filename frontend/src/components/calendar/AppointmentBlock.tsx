@@ -1,3 +1,4 @@
+import { Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppointmentWithDetails } from "@/types";
 import { formatTime, getDurationMinutes, formatDuration } from "./hooks/useDateUtils";
@@ -67,11 +68,14 @@ export function AppointmentBlock({
         <div className="flex items-start justify-between gap-1">
           <span
             className={cn(
-              "font-semibold text-foreground truncate leading-tight",
+              "font-semibold text-foreground truncate leading-tight flex items-center gap-0.5",
               compact ? "text-[11px]" : "text-xs md:text-sm",
               appointment.status === "cancelled" && "line-through"
             )}
           >
+            {appointment.recurrenceGroupId && (
+              <Repeat className="h-2.5 w-2.5 flex-shrink-0 opacity-60" />
+            )}
             {appointment.service.name}
           </span>
           {!showDetails && (

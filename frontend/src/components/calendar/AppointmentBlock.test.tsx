@@ -11,6 +11,8 @@ const baseAppointment: AppointmentWithDetails = {
   endUtc: "2026-01-29T11:00:00",
   status: "confirmed",
   notes: null,
+  recurrenceGroupId: null,
+  recurrenceRule: null,
   createdAt: "2026-01-01T00:00:00",
   client: {
     id: "client-1",

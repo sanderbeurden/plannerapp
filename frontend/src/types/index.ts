@@ -19,6 +19,13 @@ export type Service = {
 
 export type AppointmentStatus = "confirmed" | "hold" | "cancelled";
 
+export type RecurrencePattern = "weekly" | "biweekly" | "monthly";
+
+export type RecurrenceRule = {
+  pattern: RecurrencePattern;
+  count: number;
+};
+
 export type Appointment = {
   id: string;
   clientId: string;
@@ -27,6 +34,8 @@ export type Appointment = {
   endUtc: string;
   status: AppointmentStatus;
   notes: string | null;
+  recurrenceGroupId: string | null;
+  recurrenceRule: RecurrenceRule | null;
   createdAt: string;
 };
 

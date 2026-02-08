@@ -4,6 +4,7 @@ import type {
   Appointment,
   AppointmentWithDetails,
   Client,
+  RecurrencePattern,
   Service,
 } from "@/types";
 
@@ -14,9 +15,21 @@ type CreateAppointmentInput = {
   endUtc: string;
   status: "confirmed" | "hold" | "cancelled";
   notes?: string;
+  recurrence?: { pattern: RecurrencePattern; count: number };
+  excludeDates?: string[];
+  dryRun?: boolean;
 };
 
-type UpdateAppointmentInput = Partial<CreateAppointmentInput>;
+export type RecurrenceOccurrence = {
+  startUtc: string;
+  endUtc: string;
+  hasConflict: boolean;
+  excluded: boolean;
+};
+
+type UpdateAppointmentInput = Partial<Omit<CreateAppointmentInput, "recurrence" | "excludeDates" | "dryRun">> & {
+  scope?: "single" | "future";
+};
 
 export function useAppointments(from: Date, to: Date) {
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>(
@@ -76,8 +89,33 @@ export function useAppointments(from: Date, to: Date) {
     return () => appointmentsAbortRef.current?.abort();
   }, []);
 
+  const previewRecurrence = useCallback(
+    async (input: CreateAppointmentInput): Promise<RecurrenceOccurrence[] | null> => {
+      try {
+        const response = await fetch(apiUrl("/api/appointments"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ...input, dryRun: true }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to preview recurrence");
+        }
+
+        const data = (await response.json()) as { data: { occurrences: RecurrenceOccurrence[] } };
+        return data.data.occurrences;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+        return null;
+      }
+    },
+    []
+  );
+
   const createAppointment = useCallback(
-    async (input: CreateAppointmentInput): Promise<Appointment | null> => {
+    async (input: CreateAppointmentInput): Promise<Appointment | Appointment[] | null> => {
       try {
         const response = await fetch(apiUrl("/api/appointments"), {
           method: "POST",
@@ -91,7 +129,7 @@ export function useAppointments(from: Date, to: Date) {
           throw new Error(data.error || "Failed to create appointment");
         }
 
-        const data = (await response.json()) as { data: Appointment };
+        const data = (await response.json()) as { data: Appointment | Appointment[] };
         await fetchAppointments();
         return data.data;
       } catch (err) {
@@ -132,9 +170,10 @@ export function useAppointments(from: Date, to: Date) {
   );
 
   const deleteAppointment = useCallback(
-    async (id: string): Promise<boolean> => {
+    async (id: string, scope?: "single" | "future"): Promise<boolean> => {
       try {
-        const response = await fetch(apiUrl(`/api/appointments/${id}`), {
+        const params = scope ? `?scope=${scope}` : "";
+        const response = await fetch(apiUrl(`/api/appointments/${id}${params}`), {
           method: "DELETE",
           credentials: "include",
         });
@@ -164,6 +203,7 @@ export function useAppointments(from: Date, to: Date) {
     clearError,
     refetch: fetchAppointments,
     createAppointment,
+    previewRecurrence,
     updateAppointment,
     deleteAppointment,
   };
