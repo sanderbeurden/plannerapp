@@ -12,9 +12,9 @@ import type { ConnectionPlatform } from "@/types";
 const START_HOUR_OPTIONS = [6, 7, 8, 9, 10, 11, 12];
 const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
 const CONNECTIONS = [
-  { platform: "instagram", labelKey: "settings.connectionInstagram", Icon: Instagram },
-  { platform: "facebook", labelKey: "settings.connectionFacebook", Icon: Facebook },
-  { platform: "whatsapp", labelKey: "settings.connectionWhatsapp", Icon: MessageCircle },
+  { platform: "instagram", Icon: Instagram },
+  { platform: "facebook", Icon: Facebook },
+  { platform: "whatsapp", Icon: MessageCircle },
 ] as const;
 
 export function Settings() {
@@ -241,46 +241,39 @@ export function Settings() {
             {connectionsLoading ? (
               <p className="text-sm text-muted-foreground">{t("settings.connectionLoading")}</p>
             ) : (
-              <div className="space-y-3">
-                {CONNECTIONS.map(({ platform, labelKey, Icon }) => {
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {CONNECTIONS.map(({ platform, Icon }) => {
                   const connection = connections.find((item) => item.platform === platform);
                   const isConnected = connection?.status === "connected";
-                  const linkedAt =
-                    isConnected && connection?.connectedAt
-                      ? new Date(connection.connectedAt).toLocaleString()
-                      : null;
 
                   return (
                     <div
                       key={platform}
-                      className="rounded-lg border border-border bg-background/60 px-3 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex h-full min-h-[210px] flex-col items-center justify-center rounded-lg border border-border bg-background/60 p-4 text-center"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-lg bg-muted p-2 text-muted-foreground">
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{t(labelKey)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {isConnected
-                              ? t("settings.connectionConnected")
-                              : t("settings.connectionDisconnected")}
-                          </p>
-                          {linkedAt && (
-                            <p className="text-xs text-muted-foreground">
-                              {t("settings.connectionLinkedAt", { date: linkedAt })}
-                            </p>
-                          )}
-                        </div>
+                      <div className="rounded-2xl bg-muted p-4 text-muted-foreground">
+                        <Icon className="h-9 w-9" />
                       </div>
-                      <Button
-                        variant={isConnected ? "outline" : "default"}
-                        size="sm"
-                        disabled={actionPlatform === platform}
-                        onClick={() => handleConnectionAction(platform, isConnected)}
+                      <p
+                        className={`mt-4 text-sm font-semibold ${
+                          isConnected ? "text-emerald-700" : "text-muted-foreground"
+                        }`}
                       >
-                        {isConnected ? t("settings.disconnect") : t("settings.connect")}
-                      </Button>
+                        {isConnected
+                          ? t("settings.connectionConnected")
+                          : t("settings.connectionDisconnected")}
+                      </p>
+                      <div className="mt-5 w-full">
+                        <Button
+                          variant={isConnected ? "outline" : "default"}
+                          size="sm"
+                          className="w-full"
+                          disabled={actionPlatform === platform}
+                          onClick={() => handleConnectionAction(platform, isConnected)}
+                        >
+                          {isConnected ? t("settings.disconnect") : t("settings.connect")}
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
