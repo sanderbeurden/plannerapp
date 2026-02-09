@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Facebook, Instagram, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings, type Language } from "@/lib/settings";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { apiUrl } from "@/lib/api";
+import { useConnections } from "@/lib/connections";
+import type { ConnectionPlatform } from "@/types";
 
 const START_HOUR_OPTIONS = [6, 7, 8, 9, 10, 11, 12];
 const END_HOUR_OPTIONS = [17, 18, 19, 20, 21, 22, 23];
+const CONNECTIONS = [
+  { platform: "instagram", labelKey: "settings.connectionInstagram", Icon: Instagram },
+  { platform: "facebook", labelKey: "settings.connectionFacebook", Icon: Facebook },
+  { platform: "whatsapp", labelKey: "settings.connectionWhatsapp", Icon: MessageCircle },
+] as const;
 
 export function Settings() {
   const { settings, updateSettings } = useSettings();
@@ -20,6 +27,15 @@ export function Settings() {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState("");
+  const {
+    connections,
+    loading: connectionsLoading,
+    error: connectionError,
+    actionPlatform,
+    connect,
+    disconnect,
+  } = useConnections();
 
   const handleExport = async (endpoint: string, filename: string) => {
     setExportMessage("");
@@ -85,6 +101,19 @@ export function Settings() {
       setDeleteMessage(t("settings.deleteFailed"));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleConnectionAction = async (
+    platform: ConnectionPlatform,
+    isCurrentlyConnected: boolean
+  ) => {
+    setConnectionMessage("");
+    const success = isCurrentlyConnected
+      ? await disconnect(platform)
+      : await connect(platform);
+    if (!success) {
+      setConnectionMessage(t("settings.connectionFailed"));
     }
   };
 
@@ -198,6 +227,69 @@ export function Settings() {
           {exportMessage && (
             <p className="text-sm text-red-600">{exportMessage}</p>
           )}
+          </div>
+
+          {/* Connections Section */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <div>
+              <h2 className="text-sm font-medium">{t("settings.connectionsTitle")}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("settings.connectionsHelp")}
+              </p>
+            </div>
+
+            {connectionsLoading ? (
+              <p className="text-sm text-muted-foreground">{t("settings.connectionLoading")}</p>
+            ) : (
+              <div className="space-y-3">
+                {CONNECTIONS.map(({ platform, labelKey, Icon }) => {
+                  const connection = connections.find((item) => item.platform === platform);
+                  const isConnected = connection?.status === "connected";
+                  const linkedAt =
+                    isConnected && connection?.connectedAt
+                      ? new Date(connection.connectedAt).toLocaleString()
+                      : null;
+
+                  return (
+                    <div
+                      key={platform}
+                      className="rounded-lg border border-border bg-background/60 px-3 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-muted p-2 text-muted-foreground">
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{t(labelKey)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isConnected
+                              ? t("settings.connectionConnected")
+                              : t("settings.connectionDisconnected")}
+                          </p>
+                          {linkedAt && (
+                            <p className="text-xs text-muted-foreground">
+                              {t("settings.connectionLinkedAt", { date: linkedAt })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant={isConnected ? "outline" : "default"}
+                        size="sm"
+                        disabled={actionPlatform === platform}
+                        onClick={() => handleConnectionAction(platform, isConnected)}
+                      >
+                        {isConnected ? t("settings.disconnect") : t("settings.connect")}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {(connectionMessage || connectionError) && (
+              <p className="text-sm text-red-600">{connectionMessage || t("settings.connectionFailed")}</p>
+            )}
           </div>
 
           {/* Delete Account */}

@@ -44,6 +44,28 @@ const PASSWORD_MAX_BYTES = 72;
 const EMAIL_VERIFY_EXPIRES_HOURS = 24;
 const PASSWORD_RESET_EXPIRES_HOURS = 2;
 const APP_BASE_URL = process.env.APP_BASE_URL ?? "http://localhost:5173";
+const CONNECTION_PLATFORMS = ["instagram", "facebook", "whatsapp"] as const;
+
+type ConnectionPlatform = (typeof CONNECTION_PLATFORMS)[number];
+type ConnectionStatus = "connected" | "disconnected";
+
+type ConnectionRow = {
+  platform: ConnectionPlatform;
+  status: ConnectionStatus;
+  account_name: string | null;
+  external_account_id: string | null;
+  connected_at: string | null;
+  last_error: string | null;
+  updated_at: string;
+};
+
+function isConnectionPlatform(value: string): value is ConnectionPlatform {
+  return (CONNECTION_PLATFORMS as readonly string[]).includes(value);
+}
+
+function normalizeConnectionStatus(value: string): ConnectionStatus {
+  return value === "connected" ? "connected" : "disconnected";
+}
 
 function validateEnvironment() {
   const missing = [];
@@ -412,10 +434,142 @@ app.use("/api/services", requireAuth);
 app.use("/api/services/*", requireAuth);
 app.use("/api/appointments", requireAuth);
 app.use("/api/appointments/*", requireAuth);
+app.use("/api/connections", requireAuth);
+app.use("/api/connections/*", requireAuth);
 app.use("/api/exports", requireAuth);
 app.use("/api/exports/*", requireAuth);
 app.use("/api/account", requireAuth);
 app.use("/api/account/*", requireAuth);
+
+app.get("/api/connections", c => {
+  const user = c.get("user");
+  const rows = db
+    .query(
+      `SELECT platform, status, account_name, external_account_id, connected_at, last_error, updated_at
+       FROM channel_connections
+       WHERE user_id = ?`
+    )
+    .all(user.id) as ConnectionRow[];
+
+  const byPlatform = new Map<ConnectionPlatform, ConnectionRow>(
+    rows.map(row => [row.platform, row])
+  );
+
+  const data = CONNECTION_PLATFORMS.map(platform => {
+    const row = byPlatform.get(platform);
+    return {
+      platform,
+      status: row ? normalizeConnectionStatus(row.status) : "disconnected",
+      accountName: row?.account_name ?? null,
+      externalAccountId: row?.external_account_id ?? null,
+      connectedAt: row?.connected_at ?? null,
+      lastError: row?.last_error ?? null,
+      updatedAt: row?.updated_at ?? null,
+    };
+  });
+
+  return jsonOk(c, data);
+});
+
+app.post("/api/connections/:platform/connect", async c => {
+  const user = c.get("user");
+  const platform = c.req.param("platform");
+  if (!isConnectionPlatform(platform)) {
+    return jsonError(c, "Unsupported platform.", 400, "CONNECTION_PLATFORM_INVALID");
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const accountName = getOptionalString(body?.accountName);
+  const externalAccountId = getOptionalString(body?.externalAccountId);
+
+  db.query(
+    `INSERT INTO channel_connections (
+      id, user_id, platform, status, account_name, external_account_id, connected_at, last_error, updated_at
+    )
+    VALUES (?, ?, ?, 'connected', ?, ?, datetime('now'), NULL, datetime('now'))
+    ON CONFLICT(user_id, platform) DO UPDATE SET
+      status = 'connected',
+      account_name = excluded.account_name,
+      external_account_id = excluded.external_account_id,
+      connected_at = datetime('now'),
+      last_error = NULL,
+      updated_at = datetime('now')`
+  ).run(
+    crypto.randomUUID(),
+    user.id,
+    platform,
+    accountName ?? null,
+    externalAccountId ?? null
+  );
+
+  const row = db
+    .query(
+      `SELECT platform, status, account_name, external_account_id, connected_at, last_error, updated_at
+       FROM channel_connections
+       WHERE user_id = ? AND platform = ?
+       LIMIT 1`
+    )
+    .get(user.id, platform) as ConnectionRow | null;
+
+  if (!row) {
+    return jsonError(c, "Failed to connect account.", 500, "CONNECTION_CONNECT_FAILED");
+  }
+
+  return jsonOk(c, {
+    platform: row.platform,
+    status: normalizeConnectionStatus(row.status),
+    accountName: row.account_name,
+    externalAccountId: row.external_account_id,
+    connectedAt: row.connected_at,
+    lastError: row.last_error,
+    updatedAt: row.updated_at,
+  });
+});
+
+app.post("/api/connections/:platform/disconnect", c => {
+  const user = c.get("user");
+  const platform = c.req.param("platform");
+  if (!isConnectionPlatform(platform)) {
+    return jsonError(c, "Unsupported platform.", 400, "CONNECTION_PLATFORM_INVALID");
+  }
+
+  db.query(
+    `INSERT INTO channel_connections (
+      id, user_id, platform, status, account_name, external_account_id, connected_at, last_error, updated_at
+    )
+    VALUES (?, ?, ?, 'disconnected', NULL, NULL, NULL, NULL, datetime('now'))
+    ON CONFLICT(user_id, platform) DO UPDATE SET
+      status = 'disconnected',
+      account_name = NULL,
+      external_account_id = NULL,
+      connected_at = NULL,
+      last_error = NULL,
+      updated_at = datetime('now')`
+  ).run(crypto.randomUUID(), user.id, platform);
+
+  const row = db
+    .query(
+      `SELECT platform, status, account_name, external_account_id, connected_at, last_error, updated_at
+       FROM channel_connections
+       WHERE user_id = ? AND platform = ?
+       LIMIT 1`
+    )
+    .get(user.id, platform) as ConnectionRow | null;
+
+  if (!row) {
+    return jsonError(c, "Failed to disconnect account.", 500, "CONNECTION_DISCONNECT_FAILED");
+  }
+
+  return jsonOk(c, {
+    platform: row.platform,
+    status: normalizeConnectionStatus(row.status),
+    accountName: row.account_name,
+    externalAccountId: row.external_account_id,
+    connectedAt: row.connected_at,
+    lastError: row.last_error,
+    updatedAt: row.updated_at,
+  });
+});
 
 app.get("/api/clients", c => {
   const user = c.get("user");

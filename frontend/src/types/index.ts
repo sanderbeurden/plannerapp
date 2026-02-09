@@ -45,3 +45,17 @@ export type AppointmentWithDetails = Appointment & {
 };
 
 export type CalendarView = "day" | "week";
+
+export type ConnectionPlatform = "instagram" | "facebook" | "whatsapp";
+
+export type ConnectionStatus = "connected" | "disconnected";
+
+export type ChannelConnection = {
+  platform: ConnectionPlatform;
+  status: ConnectionStatus;
+  accountName: string | null;
+  externalAccountId: string | null;
+  connectedAt: string | null;
+  lastError: string | null;
+  updatedAt: string | null;
+};
