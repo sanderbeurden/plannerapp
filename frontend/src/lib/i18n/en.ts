@@ -100,6 +100,11 @@ export const en = {
     deleteRecurringTitle: "Delete recurring appointment",
     deleteSingle: "Only this appointment",
     deleteFuture: "This and all future",
+    moveConfirmTitle: "Move appointment?",
+    moveConfirmDescription: "Please confirm the new time to avoid accidental changes.",
+    moveConfirmAction: "Move appointment",
+    moveFrom: "From",
+    moveTo: "To",
     conflictsFound: "Some dates overlap with existing appointments",
     errors: {
       selectClient: "Please select a client",

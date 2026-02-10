@@ -102,6 +102,11 @@ export const nl: TranslationKeys = {
     deleteRecurringTitle: "Herhalende afspraak verwijderen",
     deleteSingle: "Alleen deze afspraak",
     deleteFuture: "Deze en alle toekomstige",
+    moveConfirmTitle: "Afspraak verplaatsen?",
+    moveConfirmDescription: "Bevestig de nieuwe tijd om per ongeluk verplaatsen te voorkomen.",
+    moveConfirmAction: "Afspraak verplaatsen",
+    moveFrom: "Van",
+    moveTo: "Naar",
     conflictsFound: "Sommige datums overlappen met bestaande afspraken",
     errors: {
       selectClient: "Selecteer een klant",
