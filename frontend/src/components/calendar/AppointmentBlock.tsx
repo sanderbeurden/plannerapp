@@ -52,7 +52,7 @@ export function AppointmentBlock({
         "active:scale-[0.98] active:opacity-90",
         "animate-appointment-appear",
         statusClass,
-        isDragging && "opacity-50",
+        isDragging && "opacity-70 scale-[0.96] -translate-y-1 shadow-lg ring-1 ring-primary/25",
         appointment.status === "cancelled" && "opacity-60"
       )}
       style={{

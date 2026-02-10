@@ -19,6 +19,14 @@ type DayViewProps = {
 const HOUR_HEIGHT = 112; // 28px per 15-min slot for better touch targets
 const GRID_TOP_PADDING_PX = 12; // Matches TimeGrid pt-3
 
+type DragPreview = {
+  slotMinutes: number;
+  top: number;
+  height: number;
+  start: Date;
+  end: Date;
+};
+
 export function DayView({
   appointments,
   onAppointmentClick,
@@ -33,6 +41,8 @@ export function DayView({
   const END_HOUR = settings.calendarEndHour;
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const dragPointerOffsetMinutesRef = useRef(0);
   const touchStartX = useRef<number | null>(null);
   const lastSelectedDateKeyRef = useRef<string | null>(null);
   const lastManualScrollKeyRef = useRef<string | null>(null);
@@ -145,71 +155,178 @@ export function DayView({
     lastAutoScrollKeyRef.current = dateKey;
   }, [selectedDate, START_HOUR, END_HOUR]);
 
+  const clearDragState = useCallback(() => {
+    setDraggingId(null);
+    setDragPreview(null);
+    dragPointerOffsetMinutesRef.current = 0;
+  }, []);
+
+  const getDurationMinutes = useCallback((appointment: AppointmentWithDetails) => {
+    const start = new Date(appointment.startUtc);
+    const end = new Date(appointment.endUtc);
+    return Math.max(
+      15,
+      Math.round((end.getTime() - start.getTime()) / (1000 * 60))
+    );
+  }, []);
+
+  const calculateDropPreview = useCallback(
+    (clientY: number, durationMinutes: number): DragPreview | null => {
+      const container = containerRef.current;
+      if (!container) return null;
+
+      const gridElement = container.querySelector<HTMLElement>("[data-time-grid-hours]");
+      if (!gridElement) return null;
+
+      const rect = gridElement.getBoundingClientRect();
+      const pointerMinutes = ((clientY - rect.top) / HOUR_HEIGHT) * 60;
+
+      let slotMinutes = Math.round(
+        (pointerMinutes - dragPointerOffsetMinutesRef.current) / 15
+      ) * 15;
+      const dayMinutes = (END_HOUR - START_HOUR) * 60;
+      const maxStartMinutes = Math.max(0, dayMinutes - durationMinutes);
+      slotMinutes = Math.max(0, Math.min(slotMinutes, maxStartMinutes));
+
+      const hour = START_HOUR + Math.floor(slotMinutes / 60);
+      const minute = slotMinutes % 60;
+      const start = setTimeOnDate(selectedDate, hour, minute);
+      const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+      return {
+        slotMinutes,
+        top: (slotMinutes / 60) * HOUR_HEIGHT,
+        height: Math.max((durationMinutes / 60) * HOUR_HEIGHT, 24),
+        start,
+        end,
+      };
+    },
+    [selectedDate, START_HOUR, END_HOUR]
+  );
+
   const handleDragStart = useCallback(
     (e: React.DragEvent, appointment: AppointmentWithDetails) => {
       setDraggingId(appointment.id);
+      const durationMinutes = getDurationMinutes(appointment);
+
+      const blockElement = e.currentTarget as HTMLDivElement;
+      const blockRect = blockElement.getBoundingClientRect();
+      const pointerOffsetPx = Math.max(
+        0,
+        Math.min(e.clientY - blockRect.top, blockRect.height)
+      );
+      dragPointerOffsetMinutesRef.current = Math.max(
+        0,
+        Math.min((pointerOffsetPx / HOUR_HEIGHT) * 60, durationMinutes)
+      );
+
       e.dataTransfer.setData("appointmentId", appointment.id);
       e.dataTransfer.effectAllowed = "move";
+
+      // Use a custom drag image so the dragged item feels lifted and slightly compact.
+      const dragImage = blockElement.cloneNode(true) as HTMLDivElement;
+      dragImage.style.position = "fixed";
+      dragImage.style.top = "-10000px";
+      dragImage.style.left = "-10000px";
+      dragImage.style.width = `${blockRect.width}px`;
+      dragImage.style.pointerEvents = "none";
+      dragImage.style.transform = "scale(0.96)";
+      dragImage.style.opacity = "0.96";
+      dragImage.style.boxShadow = "0 18px 36px rgba(15, 23, 42, 0.22)";
+      document.body.appendChild(dragImage);
+
+      e.dataTransfer.setDragImage(
+        dragImage,
+        Math.max(0, Math.min(e.clientX - blockRect.left, blockRect.width)),
+        pointerOffsetPx
+      );
+
+      requestAnimationFrame(() => {
+        dragImage.remove();
+      });
+
+      const nextPreview = calculateDropPreview(e.clientY, durationMinutes);
+      setDragPreview(nextPreview);
     },
-    []
+    [calculateDropPreview, getDurationMinutes]
   );
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const appointmentId = e.dataTransfer.getData("appointmentId") || draggingId;
+      if (!appointmentId) return;
+
+      const appointment = appointments.find((a) => a.id === appointmentId);
+      if (!appointment) return;
+
+      const durationMinutes = getDurationMinutes(appointment);
+      const nextPreview = calculateDropPreview(e.clientY, durationMinutes);
+      if (!nextPreview) return;
+
+      setDragPreview((prev) => {
+        if (
+          prev &&
+          prev.slotMinutes === nextPreview.slotMinutes &&
+          prev.height === nextPreview.height
+        ) {
+          return prev;
+        }
+        return nextPreview;
+      });
+    },
+    [appointments, draggingId, calculateDropPreview, getDurationMinutes]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      const appointmentId = e.dataTransfer.getData("appointmentId");
-      if (!appointmentId || !containerRef.current) {
-        setDraggingId(null);
+      const appointmentId = e.dataTransfer.getData("appointmentId") || draggingId;
+      if (!appointmentId) {
+        clearDragState();
         return;
       }
 
       const appointment = appointments.find((a) => a.id === appointmentId);
       if (!appointment) {
-        setDraggingId(null);
+        clearDragState();
         return;
       }
 
-      const gridElement = containerRef.current.querySelector(
-        "[data-time-grid]"
-      );
-      if (!gridElement) {
-        setDraggingId(null);
+      const durationMinutes = getDurationMinutes(appointment);
+      const placement = calculateDropPreview(e.clientY, durationMinutes) ?? dragPreview;
+      if (!placement) {
+        clearDragState();
         return;
       }
-
-      const rect = gridElement.getBoundingClientRect();
-      const y = Math.max(0, e.clientY - rect.top);
-      const totalMinutes = (y / HOUR_HEIGHT) * 60;
-      let slotMinutes = Math.round(totalMinutes / 15) * 15;
 
       const oldStart = new Date(appointment.startUtc);
       const oldEnd = new Date(appointment.endUtc);
-      const durationMinutes = (oldEnd.getTime() - oldStart.getTime()) / (1000 * 60);
+      if (
+        oldStart.getTime() !== placement.start.getTime() ||
+        oldEnd.getTime() !== placement.end.getTime()
+      ) {
+        onReschedule(appointmentId, placement.start, placement.end);
+      }
 
-      // Clamp to valid bounds
-      const maxStartMinutes = (END_HOUR - START_HOUR) * 60 - durationMinutes;
-      slotMinutes = Math.max(0, Math.min(slotMinutes, maxStartMinutes));
-
-      const hour = START_HOUR + Math.floor(slotMinutes / 60);
-      const minute = slotMinutes % 60;
-
-      const newStart = setTimeOnDate(selectedDate, hour, minute);
-      const newEnd = new Date(newStart.getTime() + durationMinutes * 60 * 1000);
-
-      onReschedule(appointmentId, newStart, newEnd);
-      setDraggingId(null);
+      clearDragState();
     },
-    [appointments, selectedDate, onReschedule]
+    [
+      appointments,
+      draggingId,
+      dragPreview,
+      clearDragState,
+      calculateDropPreview,
+      getDurationMinutes,
+      onReschedule,
+    ]
   );
 
   const handleDragEnd = useCallback(() => {
-    setDraggingId(null);
-  }, []);
+    clearDragState();
+  }, [clearDragState]);
 
   return (
     <div
@@ -239,6 +356,17 @@ export function DayView({
             endHour={END_HOUR}
             hourHeight={HOUR_HEIGHT}
           />
+
+          {dragPreview && (
+            <div
+              className="absolute left-0.5 right-1 md:left-1 md:right-2 rounded-lg md:rounded-xl border border-dashed border-primary/40 bg-primary/12 ring-1 ring-primary/15 shadow-[0_8px_24px_rgba(15,23,42,0.12)] pointer-events-none transition-[top,height] duration-75"
+              style={{
+                top: dragPreview.top,
+                height: dragPreview.height,
+              }}
+              aria-hidden
+            />
+          )}
 
           {dayAppointments.map((appointment) => (
             <AppointmentBlock

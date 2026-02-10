@@ -51,7 +51,7 @@ export function TimeGrid({
       </div>
 
       {/* Grid area */}
-      <div className="relative flex-1">
+      <div className="relative flex-1" data-time-grid-hours>
         {hours.map((hour, hourIndex) => (
           <div
             key={hour}
