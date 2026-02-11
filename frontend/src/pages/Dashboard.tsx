@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Settings, Scissors, Sparkles, Users, Sliders } from "lucide-react";
+import { LogOut, Settings, Scissors, Users, Sliders } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,11 @@ export function Dashboard() {
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
           <div className="flex items-center gap-2.5 md:gap-3">
             <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-xl md:rounded-2xl bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
+              <img
+                src="/icons/logo.svg"
+                alt={`${t("landing.title")} logo`}
+                className="h-4 w-4 md:h-5 md:w-5"
+              />
             </div>
             <div>
               <p className="hidden md:block text-xs uppercase tracking-[0.3em] text-muted-foreground">

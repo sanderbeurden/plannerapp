@@ -9,7 +9,6 @@ import {
   Plus,
   Scissors,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -195,7 +194,11 @@ export function Landing() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
-              <Sparkles className="h-5 w-5" />
+              <img
+                src="/icons/logo.svg"
+                alt={`${t("landing.title")} logo`}
+                className="h-5 w-5"
+              />
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
