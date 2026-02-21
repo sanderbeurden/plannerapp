@@ -545,9 +545,12 @@ export function AppointmentModal({
                 <label className="text-xs font-medium">{t("appointment.time")}</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div className="rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring cursor-pointer px-2.5 py-1.5 text-sm text-center">
+                    <button
+                      type="button"
+                      className="w-full rounded-md border border-input bg-background focus:ring-2 focus:ring-ring cursor-pointer px-2.5 py-1.5 text-sm text-center"
+                    >
                       {formatOccurrenceDate(startDateTime.toISOString())}
-                    </div>
+                    </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="center">
                     <Calendar
@@ -575,14 +578,15 @@ export function AppointmentModal({
                     <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.start")}</label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <div
+                        <button
+                          type="button"
                           className={cn(
-                            "rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
+                            "w-full rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
                             hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                           )}
                         >
                           {formatTime(startDateTime)}
-                        </div>
+                        </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-2" align="center">
                         <TimePickerWheel
@@ -598,14 +602,15 @@ export function AppointmentModal({
                       <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.end")}</label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <div
+                          <button
+                            type="button"
                             className={cn(
-                              "rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
+                              "w-full rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
                               hasOverlap ? "border-red-300 bg-red-50" : "border-input"
                             )}
                           >
                             {formatTime(endDateTime)}
-                          </div>
+                          </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" align="center">
                           <TimePickerWheel
@@ -660,10 +665,10 @@ export function AppointmentModal({
                     value={recurrencePattern}
                     onValueChange={(val: string) => setRecurrencePattern(val as RecurrencePattern | "none")}
                   >
-                    <SelectTrigger className="w-full text-sm">
+                    <SelectTrigger className="w-full text-sm h-8 border-input bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       <SelectItem value="none">{t("appointment.repeatNone")}</SelectItem>
                       <SelectItem value="weekly">{t("appointment.repeatWeekly")}</SelectItem>
                       <SelectItem value="biweekly">{t("appointment.repeatBiweekly")}</SelectItem>

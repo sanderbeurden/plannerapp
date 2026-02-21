@@ -11,14 +11,16 @@
     --foreground: 24 15% 14%;
     --card: 0 0% 100%;
     --card-foreground: 24 15% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 15% 14%;
     --primary: 24 62% 42%;
     --primary-foreground: 36 33% 98%;
     --secondary: 30 15% 93%;
     --secondary-foreground: 24 15% 20%;
     --muted: 30 12% 93%;
     --muted-foreground: 24 8% 42%;
-    --accent: 210 25% 92%;
-    --accent-foreground: 210 28% 20%;
+    --accent: 30 20% 88%;
+    --accent-foreground: 24 15% 14%;
     --border: 30 12% 86%;
     --input: 30 12% 86%;
     --ring: 24 62% 42%;
