@@ -51,19 +51,6 @@ export function ScrollWheel({
         if (idx >= 0) scrollToIndex(idx, false);
     }, [value, options, getIndexForValue, scrollToIndex]);
 
-    // Prevent page scroll when hovering the wheel
-    useEffect(() => {
-        const el = containerRef.current;
-        if (!el) return;
-        const prevent = (e: WheelEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-            el.scrollTop += e.deltaY;
-        };
-        el.addEventListener("wheel", prevent, { passive: false });
-        return () => el.removeEventListener("wheel", prevent);
-    }, []);
-
     const handleScroll = () => {
         isUserScrollingRef.current = true;
         if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
@@ -106,8 +93,9 @@ export function ScrollWheel({
                 ref={containerRef}
                 className="h-full overflow-y-auto scrollbar-hidden relative z-20"
                 onScroll={handleScroll}
+                onWheel={(e) => e.stopPropagation()}
                 onTouchMove={(e) => e.stopPropagation()}
-                style={{ scrollSnapType: "y mandatory" }}
+                style={{ scrollSnapType: "y mandatory", overscrollBehaviorY: "contain" }}
             >
                 <div style={{ height: itemHeight }} />
                 {options.map((opt) => (
