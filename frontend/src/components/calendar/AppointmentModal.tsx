@@ -3,6 +3,7 @@ import { X, Search, Loader2, Plus, Check, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import type { AppointmentWithDetails, Client, Service, AppointmentStatus, RecurrencePattern } from "@/types";
 import { useServices, useClients, type RecurrenceOccurrence } from "./hooks/useAppointments";
 import { formatTime } from "./hooks/useDateUtils";
@@ -54,6 +55,9 @@ export function AppointmentModal({
   onPreviewRecurrence,
 }: AppointmentModalProps) {
   const { t, dayNamesShort, monthNamesShort } = useTranslation();
+  const { settings } = useSettings();
+  const START_HOUR = settings.calendarStartHour;
+  const END_HOUR = settings.calendarEndHour;
   const { services, loading: loadingServices } = useServices();
   const [clientSearch, setClientSearch] = useState("");
   const { clients, loading: loadingClients, createClient } = useClients(clientSearch);
@@ -576,7 +580,7 @@ export function AppointmentModal({
                 >
                   <div className="space-y-0.5">
                     <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.start")}</label>
-                    <Popover>
+                    <Popover modal={false}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -592,7 +596,9 @@ export function AppointmentModal({
                         <TimePickerWheel
                           date={startDateTime}
                           onChange={(d) => setStartDateTime(d)}
-                          minuteStep={15}
+                          minuteStep={5}
+                          minHour={START_HOUR}
+                          maxHour={END_HOUR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -600,7 +606,7 @@ export function AppointmentModal({
                   {selectedService && (
                     <div className="space-y-0.5">
                       <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.end")}</label>
-                      <Popover>
+                      <Popover modal={false}>
                         <PopoverTrigger asChild>
                           <button
                             type="button"
@@ -619,11 +625,13 @@ export function AppointmentModal({
                               const newDuration = Math.round(
                                 (d.getTime() - startDateTime.getTime()) / (1000 * 60)
                               );
-                              if (newDuration >= 15) {
+                              if (newDuration >= 5) {
                                 setCustomDuration(newDuration);
                               }
                             }}
-                            minuteStep={15}
+                            minuteStep={5}
+                            minHour={startDateTime.getHours()}
+                            maxHour={END_HOUR}
                           />
                         </PopoverContent>
                       </Popover>

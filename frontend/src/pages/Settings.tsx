@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { apiUrl } from "@/lib/api";
 import { useConnections } from "@/lib/connections";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ConnectionPlatform } from "@/types";
 
 const START_HOUR_OPTIONS = [6, 7, 8, 9, 10, 11, 12];
@@ -138,14 +139,18 @@ export function Settings() {
           {/* Language Section */}
           <div className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-sm font-medium mb-4">{t("settings.language")}</h2>
-            <select
+            <Select
               value={settings.language}
-              onChange={(e) => updateSettings({ language: e.target.value as Language })}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              onValueChange={(val) => updateSettings({ language: val as Language })}
             >
-              <option value="en">{t("settings.english")}</option>
-              <option value="nl">{t("settings.dutch")}</option>
-            </select>
+              <SelectTrigger className="w-full h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t("settings.english")}</SelectItem>
+                <SelectItem value="nl">{t("settings.dutch")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Calendar Hours Section */}
@@ -154,38 +159,45 @@ export function Settings() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-muted-foreground">{t("settings.startHour")}</label>
-                <select
-                  value={settings.calendarStartHour}
-                  onChange={(e) => {
-                    const newStart = parseInt(e.target.value);
+                <Select
+                  value={settings.calendarStartHour.toString()}
+                  onValueChange={(val) => {
+                    const newStart = parseInt(val);
                     updateSettings({
                       calendarStartHour: newStart,
-                      // Ensure end hour is always after start hour
                       calendarEndHour: Math.max(settings.calendarEndHour, newStart + 1)
                     });
                   }}
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {START_HOUR_OPTIONS.map((hour) => (
-                    <option key={hour} value={hour}>
-                      {hour.toString().padStart(2, "0")}:00
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1 w-full h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {START_HOUR_OPTIONS.map((hour) => (
+                      <SelectItem key={hour} value={hour.toString()}>
+                        {hour.toString().padStart(2, "0")}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">{t("settings.endHour")}</label>
-                <select
-                  value={settings.calendarEndHour}
-                  onChange={(e) => updateSettings({ calendarEndHour: parseInt(e.target.value) })}
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                <Select
+                  value={settings.calendarEndHour.toString()}
+                  onValueChange={(val) => updateSettings({ calendarEndHour: parseInt(val) })}
                 >
-                  {END_HOUR_OPTIONS.filter((hour) => hour > settings.calendarStartHour).map((hour) => (
-                    <option key={hour} value={hour}>
-                      {hour.toString().padStart(2, "0")}:00
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1 w-full h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {END_HOUR_OPTIONS.filter((hour) => hour > settings.calendarStartHour).map((hour) => (
+                      <SelectItem key={hour} value={hour.toString()}>
+                        {hour.toString().padStart(2, "0")}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -224,9 +236,9 @@ export function Settings() {
                 {t("settings.exportAppointments")}
               </Button>
             </div>
-          {exportMessage && (
-            <p className="text-sm text-red-600">{exportMessage}</p>
-          )}
+            {exportMessage && (
+              <p className="text-sm text-red-600">{exportMessage}</p>
+            )}
           </div>
 
           {/* Connections Section */}
@@ -255,9 +267,8 @@ export function Settings() {
                         <Icon className="h-9 w-9" />
                       </div>
                       <p
-                        className={`mt-4 text-sm font-semibold ${
-                          isConnected ? "text-emerald-700" : "text-muted-foreground"
-                        }`}
+                        className={`mt-4 text-sm font-semibold ${isConnected ? "text-emerald-700" : "text-muted-foreground"
+                          }`}
                       >
                         {isConnected
                           ? t("settings.connectionConnected")
