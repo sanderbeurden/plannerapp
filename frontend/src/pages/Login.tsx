@@ -87,13 +87,13 @@ export function Login() {
       <header className="border-b border-border bg-card/70">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
-              <img
-                src="/icons/logo.svg"
-                alt={`${t("landing.title")} logo`}
-                className="h-5 w-5"
-              />
-            </div>
+            <img
+              src="/icons/logo 42x42.svg"
+              alt={`${t("landing.title")} logo`}
+              width={42}
+              height={42}
+              className="rounded-xl shadow-soft shrink-0"
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {t("landing.tagline")}
@@ -150,11 +150,10 @@ export function Login() {
 
           {message && status === "error" ? (
             <p
-              className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${
-                status === "error"
+              className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${status === "error"
                   ? "border-red-200 bg-red-50 text-red-700"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
-              }`}
+                }`}
             >
               {message}
             </p>

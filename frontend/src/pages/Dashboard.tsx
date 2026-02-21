@@ -35,13 +35,20 @@ export function Dashboard() {
       <header className="relative z-40 border-b border-border/40 bg-card/60 backdrop-blur-xl supports-[backdrop-filter]:bg-card/50">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
           <div className="flex items-center gap-2.5 md:gap-3">
-            <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-xl md:rounded-2xl bg-primary text-primary-foreground">
-              <img
-                src="/icons/logo.svg"
-                alt={`${t("landing.title")} logo`}
-                className="h-4 w-4 md:h-5 md:w-5"
-              />
-            </div>
+            <img
+              src="/icons/logo 36x36.svg"
+              alt={`${t("landing.title")} logo`}
+              width={36}
+              height={36}
+              className="rounded-lg shadow-sm shrink-0 md:hidden"
+            />
+            <img
+              src="/icons/logo 42x42.svg"
+              alt={`${t("landing.title")} logo`}
+              width={42}
+              height={42}
+              className="hidden md:block rounded-xl shadow-sm shrink-0"
+            />
             <div>
               <p className="hidden md:block text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {t("landing.tagline")}

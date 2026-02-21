@@ -37,7 +37,7 @@ export function ResetPasswordRequest() {
             ? "auth.rateLimited"
             : data.code === "AUTH_EMAIL_SEND_FAILED"
               ? "auth.emailSendFailed"
-            : "auth.signUpError";
+              : "auth.signUpError";
         setStatus("error");
         setMessage(t(errorKey));
         return;
@@ -57,13 +57,13 @@ export function ResetPasswordRequest() {
       <header className="border-b border-border bg-card/70">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
-              <img
-                src="/icons/logo.svg"
-                alt={`${t("landing.title")} logo`}
-                className="h-5 w-5"
-              />
-            </div>
+            <img
+              src="/icons/logo 42x42.svg"
+              alt={`${t("landing.title")} logo`}
+              width={42}
+              height={42}
+              className="rounded-xl shadow-soft shrink-0"
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {t("landing.tagline")}

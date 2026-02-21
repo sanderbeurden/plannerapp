@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -55,17 +55,20 @@
 }
 
 @layer base {
+
   /* Hide native date/time picker icons — showPicker() handles opening */
   input[type="date"],
   input[type="time"] {
     -webkit-appearance: none;
     appearance: none;
   }
+
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator {
     display: none;
     -webkit-appearance: none;
   }
+
   input[type="date"]::-webkit-date-and-time-value,
   input[type="time"]::-webkit-date-and-time-value {
     text-align: center;
@@ -78,6 +81,7 @@
   .scrollbar-hidden {
     scrollbar-width: none;
     -ms-overflow-style: none;
+
     &::-webkit-scrollbar {
       display: none;
     }
@@ -87,10 +91,12 @@
     --status-color: hsl(var(--status-confirmed));
     --status-bg: hsl(var(--status-confirmed-bg));
   }
+
   .status-hold {
     --status-color: hsl(var(--status-hold));
     --status-bg: hsl(var(--status-hold-bg));
   }
+
   .status-cancelled {
     --status-color: hsl(var(--status-cancelled));
     --status-bg: hsl(var(--status-cancelled-bg));
@@ -98,9 +104,12 @@
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -111,6 +120,7 @@
     opacity: 0;
     transform: scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -120,8 +130,9 @@
 @keyframes slide-fade-left {
   from {
     opacity: 0;
-    transform: translateX(10px);
+    transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -131,8 +142,9 @@
 @keyframes slide-fade-right {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -142,8 +154,9 @@
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(100%);
+    transform: translateY(40px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -151,8 +164,13 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-pulse-slow {
@@ -160,23 +178,23 @@
 }
 
 .animate-appointment-appear {
-  animation: appointment-appear 250ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: appointment-appear 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-fade-left {
-  animation: slide-fade-left 200ms ease-out;
+  animation: slide-fade-left 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-fade-right {
-  animation: slide-fade-right 200ms ease-out;
+  animation: slide-fade-right 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-up {
-  animation: slide-up 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: slide-up 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade-in {
-  animation: fade-in 200ms ease-out;
+  animation: fade-in 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Safe area insets for notched devices */

@@ -48,6 +48,11 @@ export function DayView({
   const lastManualScrollKeyRef = useRef<string | null>(null);
   const lastAutoScrollKeyRef = useRef<string | null>(null);
 
+  // Helper to check if we should use full-page scroll
+  const useFullPageScroll = useCallback(() => {
+    return !window.matchMedia("(min-width: 768px)").matches;
+  }, []);
+
   // Touch swipe navigation
   useEffect(() => {
     const container = containerRef.current;
@@ -101,7 +106,6 @@ export function DayView({
     const totalMinutes = (END_HOUR - START_HOUR) * 60;
     const clampedMinutes = Math.max(0, Math.min(scrollToMinutes, totalMinutes));
     const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
-    const desiredScrollTop = targetOffset - container.clientHeight / 2;
 
     // Defer scroll to next frame to ensure layout is complete
     // Set the ref and call onScrollTargetConsumed INSIDE the timeout to survive StrictMode
@@ -109,9 +113,20 @@ export function DayView({
       // Check again inside timeout in case something changed
       if (lastManualScrollKeyRef.current === dateKey) return;
 
-      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-      const finalScrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
-      container.scrollTop = finalScrollTop;
+      if (useFullPageScroll()) {
+        const rect = container.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top;
+        const desiredScrollY = absoluteTop + targetOffset - window.innerHeight / 3;
+
+        window.scrollTo({
+          top: Math.max(0, desiredScrollY),
+          behavior: "smooth",
+        });
+      } else {
+        const desiredScrollTop = targetOffset - container.clientHeight / 2;
+        const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+        container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+      }
 
       // Mark as scrolled AFTER successful scroll
       lastManualScrollKeyRef.current = dateKey;
@@ -146,11 +161,22 @@ export function DayView({
     const totalMinutes = (END_HOUR - START_HOUR) * 60;
     const clampedMinutes = Math.max(0, Math.min(minutesFromStart, totalMinutes));
     const targetOffset = (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
-    const desiredScrollTop = targetOffset - container.clientHeight / 2;
-    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
 
     requestAnimationFrame(() => {
-      container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+      if (useFullPageScroll()) {
+        const rect = container.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top;
+        const desiredScrollY = absoluteTop + targetOffset - window.innerHeight / 3;
+
+        window.scrollTo({
+          top: Math.max(0, desiredScrollY),
+          behavior: "auto",
+        });
+      } else {
+        const desiredScrollTop = targetOffset - container.clientHeight / 2;
+        const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+        container.scrollTop = Math.max(0, Math.min(desiredScrollTop, maxScrollTop));
+      }
     });
     lastAutoScrollKeyRef.current = dateKey;
   }, [selectedDate, START_HOUR, END_HOUR]);
@@ -331,7 +357,7 @@ export function DayView({
   return (
     <div
       ref={containerRef}
-      className="relative overflow-auto scrollbar-hidden rounded-none md:rounded-xl border-y md:border border-border/40 md:border-border bg-card h-[calc(100dvh-180px)] md:h-[calc(100vh-280px)]"
+      className="relative rounded-none md:rounded-xl border-y md:border border-border/40 md:border-border bg-card pb-8 md:pb-0 md:h-[calc(100vh-280px)] md:overflow-auto md:scrollbar-hidden"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnd={handleDragEnd}

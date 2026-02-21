@@ -38,8 +38,8 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Manrope", "system-ui", "sans-serif"],
-        display: ["Fraunces", "serif"],
+        sans: ["'Plus Jakarta Sans'", "system-ui", "sans-serif"],
+        display: ["Outfit", "sans-serif"],
       },
       boxShadow: {
         soft: "0 20px 60px rgba(15, 8, 3, 0.12)",

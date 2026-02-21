@@ -99,17 +99,16 @@ export function MobileWeekGrid({
     const clampedMinutes = Math.max(0, Math.min(minutesFromStart, totalMinutes));
     const targetOffset =
       (clampedMinutes / 60) * HOUR_HEIGHT + GRID_TOP_PADDING_PX;
-    const desiredScrollTop = targetOffset - container.clientHeight / 2;
-    const maxScrollTop = Math.max(
-      0,
-      container.scrollHeight - container.clientHeight
-    );
 
     requestAnimationFrame(() => {
-      container.scrollTop = Math.max(
-        0,
-        Math.min(desiredScrollTop, maxScrollTop)
-      );
+      const rect = container.getBoundingClientRect();
+      const absoluteTop = window.scrollY + rect.top;
+      const desiredScrollY = absoluteTop + targetOffset - window.innerHeight / 3;
+
+      window.scrollTo({
+        top: Math.max(0, desiredScrollY),
+        behavior: "auto"
+      });
     });
     lastAutoScrollKeyRef.current = dateKey;
   }, [selectedDate, START_HOUR, END_HOUR, weekDays]);
@@ -166,8 +165,7 @@ export function MobileWeekGrid({
       {/* Scrollable time grid */}
       <div
         ref={containerRef}
-        className="relative overflow-auto scrollbar-hidden"
-        style={{ height: "calc(100dvh - 200px)" }}
+        className="relative pb-8"
       >
         <div className="relative flex pt-3">
           {/* Time labels column */}

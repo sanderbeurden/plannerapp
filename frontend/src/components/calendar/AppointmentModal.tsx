@@ -7,6 +7,10 @@ import type { AppointmentWithDetails, Client, Service, AppointmentStatus, Recurr
 import { useServices, useClients, type RecurrenceOccurrence } from "./hooks/useAppointments";
 import { formatTime } from "./hooks/useDateUtils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { TimePickerWheel } from "@/components/ui/time-picker-wheel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function capitalizeFirst(value: string): string {
   if (!value) return value;
@@ -537,82 +541,87 @@ export function AppointmentModal({
                 </div>
               </div>
 
-              {/* When */}
               <div className="space-y-0.5">
                 <label className="text-xs font-medium">{t("appointment.time")}</label>
-                <div className="rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring cursor-pointer">
-                  <input
-                    type="date"
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    value={`${startDateTime.getFullYear()}-${(startDateTime.getMonth() + 1).toString().padStart(2, "0")}-${startDateTime.getDate().toString().padStart(2, "0")}`}
-                    onChange={(e) => {
-                      const [year, month, day] = e.target.value.split("-").map(Number);
-                      const newDate = new Date(startDateTime);
-                      newDate.setFullYear(year, month - 1, day);
-                      if (!isNaN(newDate.getTime())) setStartDateTime(newDate);
-                    }}
-                    className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
-                  />
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring cursor-pointer px-2.5 py-1.5 text-sm text-center">
+                      {formatOccurrenceDate(startDateTime.toISOString())}
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="center">
+                    <Calendar
+                      mode="single"
+                      selected={startDateTime}
+                      onSelect={(day) => {
+                        if (!day) return;
+                        const newDate = new Date(startDateTime);
+                        newDate.setFullYear(day.getFullYear(), day.getMonth(), day.getDate());
+                        setStartDateTime(newDate);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
                 {/* Start/End Time */}
                 <div
                   className={cn(
-                    "grid gap-1.5 pt-1.5",
+                    "grid gap-3 pt-1.5",
                     selectedService ? "grid-cols-2" : "grid-cols-1"
                   )}
                 >
                   <div className="space-y-0.5">
                     <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.start")}</label>
-                    <div
-                      className={cn(
-                        "rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring",
-                        hasOverlap ? "border-red-300 bg-red-50" : "border-input"
-                      )}
-                    >
-                      <input
-                        type="time"
-                        onClick={(e) => e.currentTarget.showPicker()}
-                        value={`${startDateTime.getHours().toString().padStart(2, "0")}:${startDateTime.getMinutes().toString().padStart(2, "0")}`}
-                        onChange={(e) => {
-                          const [hours, minutes] = e.target.value.split(":").map(Number);
-                          const newTime = new Date(startDateTime);
-                          newTime.setHours(hours, minutes, 0, 0);
-                          if (!isNaN(newTime.getTime())) setStartDateTime(newTime);
-                        }}
-                        step="900"
-                        className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
-                      />
-                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <div
+                          className={cn(
+                            "rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
+                            hasOverlap ? "border-red-300 bg-red-50" : "border-input"
+                          )}
+                        >
+                          {formatTime(startDateTime)}
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="center">
+                        <TimePickerWheel
+                          date={startDateTime}
+                          onChange={(d) => setStartDateTime(d)}
+                          minuteStep={15}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {selectedService && (
                     <div className="space-y-0.5">
                       <label className="text-[10px] text-muted-foreground pl-0.5">{t("appointment.end")}</label>
-                      <div
-                        className={cn(
-                          "rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring",
-                          hasOverlap ? "border-red-300 bg-red-50" : "border-input"
-                        )}
-                      >
-                        <input
-                          type="time"
-                          onClick={(e) => e.currentTarget.showPicker()}
-                          value={`${endDateTime.getHours().toString().padStart(2, "0")}:${endDateTime.getMinutes().toString().padStart(2, "0")}`}
-                          onChange={(e) => {
-                            const [hours, minutes] = e.target.value.split(":").map(Number);
-                            const newEnd = new Date(startDateTime);
-                            newEnd.setHours(hours, minutes, 0, 0);
-                            const newDuration = Math.round(
-                              (newEnd.getTime() - startDateTime.getTime()) / (1000 * 60)
-                            );
-                            if (newDuration >= 15) {
-                              setCustomDuration(newDuration);
-                            }
-                          }}
-                          step="900"
-                          className="w-full bg-transparent px-2.5 py-1.5 text-sm text-center outline-none cursor-pointer"
-                        />
-                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <div
+                            className={cn(
+                              "rounded-md border bg-background px-2.5 py-1.5 text-sm text-center cursor-pointer",
+                              hasOverlap ? "border-red-300 bg-red-50" : "border-input"
+                            )}
+                          >
+                            {formatTime(endDateTime)}
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" align="center">
+                          <TimePickerWheel
+                            date={endDateTime}
+                            onChange={(d) => {
+                              const newDuration = Math.round(
+                                (d.getTime() - startDateTime.getTime()) / (1000 * 60)
+                              );
+                              if (newDuration >= 15) {
+                                setCustomDuration(newDuration);
+                              }
+                            }}
+                            minuteStep={15}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   )}
                 </div>
@@ -647,16 +656,20 @@ export function AppointmentModal({
                     <Repeat className="h-3 w-3" />
                     {t("appointment.repeat")}
                   </label>
-                  <select
+                  <Select
                     value={recurrencePattern}
-                    onChange={(e) => setRecurrencePattern(e.target.value as RecurrencePattern | "none")}
-                    className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    onValueChange={(val: string) => setRecurrencePattern(val as RecurrencePattern | "none")}
                   >
-                    <option value="none">{t("appointment.repeatNone")}</option>
-                    <option value="weekly">{t("appointment.repeatWeekly")}</option>
-                    <option value="biweekly">{t("appointment.repeatBiweekly")}</option>
-                    <option value="monthly">{t("appointment.repeatMonthly")}</option>
-                  </select>
+                    <SelectTrigger className="w-full text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("appointment.repeatNone")}</SelectItem>
+                      <SelectItem value="weekly">{t("appointment.repeatWeekly")}</SelectItem>
+                      <SelectItem value="biweekly">{t("appointment.repeatBiweekly")}</SelectItem>
+                      <SelectItem value="monthly">{t("appointment.repeatMonthly")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {recurrencePattern !== "none" && (
                     <div className="flex items-center gap-2 pt-1">
                       <input
