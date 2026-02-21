@@ -12,7 +12,7 @@ import {
 
 export function MiniCalendar() {
   const { selectedDate, setSelectedDate, setView } = useCalendar();
-  const { t, monthNames, dayNamesShort } = useTranslation();
+  const { monthNames, dayNamesShort } = useTranslation();
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
 
   const monthGrid = getMonthGrid(viewMonth);
@@ -100,18 +100,6 @@ export function MiniCalendar() {
         })}
       </div>
 
-      {/* Quick actions */}
-      <div className="mt-4 pt-4 border-t border-border">
-        <button
-          onClick={() => {
-            setSelectedDate(new Date());
-            setViewMonth(startOfMonth(new Date()));
-          }}
-          className="w-full text-sm text-primary hover:underline"
-        >
-          {t("calendar.today")}
-        </button>
-      </div>
     </div>
   );
 }

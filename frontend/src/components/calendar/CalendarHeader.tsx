@@ -34,7 +34,10 @@ export function CalendarHeader() {
   const { t, dayNames, monthNames } = useTranslation();
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const todayLabel = isToday(selectedDate) ? t("calendar.today") : formatDayOfWeekLocalized(selectedDate, dayNames);
+  const isOnToday = isToday(selectedDate);
+  const todayLabel = isOnToday
+    ? t("calendar.today")
+    : formatDayOfWeekLocalized(selectedDate, dayNames);
   const weekRange = useMemo(() => {
     if (view !== "week") return null;
     return { start: startOfWeek(selectedDate), end: endOfWeek(selectedDate) };
@@ -49,7 +52,7 @@ export function CalendarHeader() {
   };
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       {/* Left: date navigation */}
       <div className="flex items-center">
         <Button
@@ -71,7 +74,7 @@ export function CalendarHeader() {
               <h2 className="text-[17px] font-semibold tracking-tight md:hidden whitespace-nowrap">
                 {formatDateMobile(selectedDate, monthNames)}
               </h2>
-              <h2 className="hidden md:block text-xl font-semibold tracking-tight">
+              <h2 className="hidden md:block text-xl font-semibold tracking-tight whitespace-nowrap">
                 {formatDateLocalized(selectedDate, monthNames)}
               </h2>
               <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -111,20 +114,20 @@ export function CalendarHeader() {
           <ChevronRight className="h-5 w-5" />
         </Button>
 
-        {/* Desktop only: today + day label */}
-        {!isToday(selectedDate) && (
-          <button
-            onClick={goToToday}
-            className="hidden md:block text-sm font-medium text-primary active:opacity-70 transition-opacity ml-2"
-          >
-            {t("calendar.today")}
-          </button>
-        )}
         <p className="hidden md:block text-sm text-muted-foreground ml-2">{todayLabel}</p>
       </div>
 
       {/* Right: view toggle + actions */}
       <div className="flex items-center gap-2 md:gap-3">
+        <Button
+          variant={isOnToday ? "secondary" : "outline"}
+          size="sm"
+          onClick={goToToday}
+          disabled={isOnToday}
+          className="h-8 px-3"
+        >
+          {t("calendar.today")}
+        </Button>
         <ViewSwitcher view={view} onViewChange={setView} />
         <Button onClick={() => openCreateModal()} className="hidden sm:inline-flex">
           <Plus className="h-4 w-4" />

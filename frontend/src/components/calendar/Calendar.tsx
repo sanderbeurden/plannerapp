@@ -6,7 +6,6 @@ import { CalendarHeader } from "./CalendarHeader";
 import { DateStrip } from "./DateStrip";
 import { DayView } from "./DayView";
 import { WeekView } from "./WeekView";
-import { MiniCalendar } from "./MiniCalendar";
 import { AppointmentModal } from "./AppointmentModal";
 import { AppointmentPopover } from "./AppointmentPopover";
 import { useTranslation } from "@/lib/i18n";
@@ -200,51 +199,43 @@ export function Calendar() {
 
   return (
     <CalendarContext.Provider value={calendarState}>
-      <div className="flex gap-6">
-        {/* Mini calendar sidebar - hidden on mobile */}
-        <div className="hidden lg:block w-64 flex-shrink-0">
-          <MiniCalendar />
-        </div>
+      <div className="space-y-3 md:space-y-4">
+        <CalendarHeader />
+        {calendarState.view === "day" && <DateStrip />}
 
-        {/* Main calendar area */}
-        <div className="flex-1 min-w-0 space-y-3 md:space-y-4">
-          <CalendarHeader />
-          {calendarState.view === "day" && <DateStrip />}
-
-          {loading ? (
-            <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <span className="text-sm text-muted-foreground">
-                  {t("calendar.loadingAppointments")}
-                </span>
-              </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <span className="text-sm text-muted-foreground">
+                {t("calendar.loadingAppointments")}
+              </span>
             </div>
-          ) : calendarState.view === "day" ? (
-            <DayView
-              appointments={appointments}
-              onAppointmentClick={handleAppointmentClick}
-              onSlotClick={handleSlotClick}
-              onReschedule={handleReschedule}
-              scrollToMinutes={scrollTargetMinutes}
-              onScrollTargetConsumed={handleScrollTargetConsumed}
-            />
-          ) : (
-            <WeekView
-              appointments={appointments}
-              onAppointmentClick={handleAppointmentClick}
-              onSlotClick={handleSlotClick}
-              onReschedule={handleReschedule}
-              onDayClick={(date, scrollToMinutes) => {
-                calendarState.setSelectedDate(date);
-                calendarState.setView("day");
-                setScrollTargetMinutes(
-                  scrollToMinutes !== undefined ? scrollToMinutes : null
-                );
-              }}
-            />
-          )}
-        </div>
+          </div>
+        ) : calendarState.view === "day" ? (
+          <DayView
+            appointments={appointments}
+            onAppointmentClick={handleAppointmentClick}
+            onSlotClick={handleSlotClick}
+            onReschedule={handleReschedule}
+            scrollToMinutes={scrollTargetMinutes}
+            onScrollTargetConsumed={handleScrollTargetConsumed}
+          />
+        ) : (
+          <WeekView
+            appointments={appointments}
+            onAppointmentClick={handleAppointmentClick}
+            onSlotClick={handleSlotClick}
+            onReschedule={handleReschedule}
+            onDayClick={(date, scrollToMinutes) => {
+              calendarState.setSelectedDate(date);
+              calendarState.setView("day");
+              setScrollTargetMinutes(
+                scrollToMinutes !== undefined ? scrollToMinutes : null
+              );
+            }}
+          />
+        )}
       </div>
 
       {/* Modals */}
